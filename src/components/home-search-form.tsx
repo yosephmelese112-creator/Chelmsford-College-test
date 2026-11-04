@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { CustomSelect } from "@/components/custom-select";
+import { campuses } from "@/lib/content";
 
 export interface SubjectAreaOption {
   name: string;
@@ -13,6 +14,7 @@ export interface SubjectAreaOption {
 export function HomeSearchForm({ subjectAreas }: { subjectAreas: SubjectAreaOption[] }) {
   const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");
+  const [campus, setCampus] = useState("");
 
   const subjectOptions = [
     { value: "", label: "All subjects" },
@@ -23,6 +25,11 @@ export function HomeSearchForm({ subjectAreas }: { subjectAreas: SubjectAreaOpti
     { value: "", label: "Any level" },
     { value: "Level 2", label: "Level 2" },
     { value: "Level 3", label: "Level 3" },
+  ];
+
+  const campusOptions = [
+    { value: "", label: "All campuses" },
+    ...campuses.map((c) => ({ value: c.name, label: c.name })),
   ];
 
   return (
@@ -56,6 +63,18 @@ export function HomeSearchForm({ subjectAreas }: { subjectAreas: SubjectAreaOpti
           options={levelOptions}
           placeholder="Any level"
           aria-label="Filter by qualification level"
+        />
+      </div>
+
+      <div className="search-field search-campus-field">
+        <span>Campus</span>
+        <CustomSelect
+          name="campus"
+          value={campus}
+          onChange={setCampus}
+          options={campusOptions}
+          placeholder="All campuses"
+          aria-label="Filter by college campus"
         />
       </div>
 

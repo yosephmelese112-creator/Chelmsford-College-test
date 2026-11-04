@@ -4,6 +4,7 @@ import { Icon } from "@/components/icon";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { HomeSearchForm } from "@/components/home-search-form";
+import { HeroCampaignMedia } from "@/components/hero-campaign-media";
 import { courses, showcaseEvent, subjectAreas } from "@/lib/content";
 
 export default function HomePage() {
@@ -28,11 +29,7 @@ export default function HomePage() {
               </div>
               <div className="hero-footnote"><span className="hero-footnote-mark"><Icon name="sparkle" size={17} /></span><span>For school leavers, adult learners, parents and carers.</span></div>
             </div>
-            <figure className="hero-photo">
-              <img src="/images/students-collaborating.jpg" alt="Chelmsford College students laughing and enjoying college life together on campus." fetchPriority="high" />
-              <figcaption className="hero-photo-label"><span className="photo-label-dot" /> Learn together. Find your direction.</figcaption>
-              <div className="hero-photo-note"><span>Curious minds</span><span>Practical skills</span></div>
-            </figure>
+            <HeroCampaignMedia />
           </div>
 
           <div className="home-search-panel" id="course-search">

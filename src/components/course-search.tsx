@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { courses, subjectAreas } from "@/lib/content";
+import { campuses, courses, subjectAreas } from "@/lib/content";
 import type { Course } from "@/lib/content";
 import { Icon } from "@/components/icon";
 import { CustomSelect } from "@/components/custom-select";
@@ -24,6 +24,11 @@ const modeSelectOptions = [
   { value: "Part-time", label: "Part-time" },
 ];
 
+const campusSelectOptions = [
+  { value: "", label: "All campuses" },
+  ...campuses.map((c) => ({ value: c.name, label: c.name })),
+];
+
 const sortOptions = [
   { value: "recommended", label: "Recommended" },
   { value: "title", label: "Course A–Z" },
@@ -34,16 +39,20 @@ function FilterFields({
   subject,
   level,
   mode,
+  campus,
   onSubject,
   onLevel,
   onMode,
+  onCampus,
 }: {
   subject: string;
   level: string;
   mode: string;
+  campus: string;
   onSubject: (value: string) => void;
   onLevel: (value: string) => void;
   onMode: (value: string) => void;
+  onCampus: (value: string) => void;
 }) {
   return (
     <div className="filter-fields">
@@ -80,14 +89,12 @@ function FilterFields({
       <div className="form-field">
         <span>Campus</span>
         <CustomSelect
-          value=""
-          onChange={() => {}}
-          options={[{ value: "", label: "Campus details not supplied" }]}
-          placeholder="Campus details not supplied"
-          disabled
-          aria-label="Campus filter — campus data has not been supplied"
+          value={campus}
+          onChange={onCampus}
+          options={campusSelectOptions}
+          placeholder="All campuses"
+          aria-label="Filter by campus location"
         />
-        <small>Campus values were not included in the available course data.</small>
       </div>
     </div>
   );
@@ -109,6 +116,7 @@ function ResultCard({ course }: { course: Course }) {
         <div className="course-result-facts">
           <span><Icon name="calendar" size={16} /> {course.duration}</span>
           <span><Icon name="sparkle" size={15} /> {course.mode}</span>
+          <span><Icon name="location" size={15} /> {course.campus}</span>
         </div>
         <Link className="text-link" href={`/courses/${course.id}`}>
           View course details <Icon name="arrow" size={18} />
@@ -126,11 +134,13 @@ export function CourseSearch({
   initialSubject = "",
   initialLevel = "",
   initialMode = "",
+  initialCampus = "",
 }: {
   initialQuery?: string;
   initialSubject?: string;
   initialLevel?: string;
   initialMode?: string;
+  initialCampus?: string;
 }) {
   const [query, setQuery] = useState(initialQuery);
 
@@ -138,11 +148,13 @@ export function CourseSearch({
   const [draftSubject, setDraftSubject] = useState(initialSubject);
   const [draftLevel, setDraftLevel] = useState(initialLevel);
   const [draftMode, setDraftMode] = useState(initialMode);
+  const [draftCampus, setDraftCampus] = useState(initialCampus);
 
   // Active filters applied to the course results
   const [appliedSubject, setAppliedSubject] = useState(initialSubject);
   const [appliedLevel, setAppliedLevel] = useState(initialLevel);
   const [appliedMode, setAppliedMode] = useState(initialMode);
+  const [appliedCampus, setAppliedCampus] = useState(initialCampus);
 
   const [sort, setSort] = useState("recommended");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -156,12 +168,13 @@ export function CourseSearch({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [filterOpen]);
 
-  const activeFilterCount = [appliedSubject, appliedLevel, appliedMode].filter(Boolean).length;
+  const activeFilterCount = [appliedSubject, appliedLevel, appliedMode, appliedCampus].filter(Boolean).length;
 
   const applyFilters = () => {
     setAppliedSubject(draftSubject);
     setAppliedLevel(draftLevel);
     setAppliedMode(draftMode);
+    setAppliedCampus(draftCampus);
   };
 
   const applyMobileFilters = () => {
@@ -174,12 +187,14 @@ export function CourseSearch({
     setDraftSubject("");
     setDraftLevel("");
     setDraftMode("");
+    setDraftCampus("");
     setAppliedSubject("");
     setAppliedLevel("");
     setAppliedMode("");
+    setAppliedCampus("");
   };
 
-  const removeFilter = (filterType: "subject" | "level" | "mode") => {
+  const removeFilter = (filterType: "subject" | "level" | "mode" | "campus") => {
     if (filterType === "subject") {
       setDraftSubject("");
       setAppliedSubject("");
@@ -189,6 +204,9 @@ export function CourseSearch({
     } else if (filterType === "mode") {
       setDraftMode("");
       setAppliedMode("");
+    } else if (filterType === "campus") {
+      setDraftCampus("");
+      setAppliedCampus("");
     }
   };
 
@@ -196,6 +214,7 @@ export function CourseSearch({
     setDraftSubject(appliedSubject);
     setDraftLevel(appliedLevel);
     setDraftMode(appliedMode);
+    setDraftCampus(appliedCampus);
     setFilterOpen(true);
   };
 
@@ -204,34 +223,38 @@ export function CourseSearch({
     const matched = courses.filter((course) => {
       const matchesSearch =
         !search ||
-        `${course.title} ${course.subject} ${course.qualification} ${course.level}`
+        `${course.title} ${course.subject} ${course.qualification} ${course.level} ${course.campus}`
           .toLowerCase()
           .includes(search);
       return (
         matchesSearch &&
         (!appliedSubject || course.subject === appliedSubject) &&
         (!appliedLevel || course.level === appliedLevel) &&
-        (!appliedMode || course.mode === appliedMode)
+        (!appliedMode || course.mode === appliedMode) &&
+        (!appliedCampus || course.campus === appliedCampus)
       );
     });
     if (sort === "title") matched.sort((a, b) => a.title.localeCompare(b.title));
     if (sort === "duration") matched.sort((a, b) => a.duration.localeCompare(b.duration));
     return matched;
-  }, [appliedLevel, appliedMode, appliedSubject, query, sort]);
+  }, [appliedCampus, appliedLevel, appliedMode, appliedSubject, query, sort]);
 
   const hasDraftChanges =
     draftSubject !== appliedSubject ||
     draftLevel !== appliedLevel ||
-    draftMode !== appliedMode;
+    draftMode !== appliedMode ||
+    draftCampus !== appliedCampus;
 
   const fields = (prefix: string) => (
     <FilterFields
       subject={draftSubject}
       level={draftLevel}
       mode={draftMode}
+      campus={draftCampus}
       onSubject={setDraftSubject}
       onLevel={setDraftLevel}
       onMode={setDraftMode}
+      onCampus={setDraftCampus}
       key={prefix}
     />
   );
@@ -252,7 +275,7 @@ export function CourseSearch({
           </h1>
         </div>
         <p>
-          Search the available course sample by keyword, subject, level or study mode. If you’re not sure, start with a subject that interests you.
+          Search the available course sample by keyword, subject, level, study mode or campus. If you’re not sure, start with a subject that interests you.
         </p>
       </header>
 
@@ -265,14 +288,14 @@ export function CourseSearch({
         }}
       >
         <label className="sr-only" htmlFor="course-query">
-          Search by course, subject or qualification
+          Search by course, subject, qualification or campus
         </label>
         <Icon name="search" size={21} />
         <input
           id="course-query"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search courses, subjects or qualifications"
+          placeholder="Search courses, subjects, qualifications or campus"
         />
         {query && (
           <button className="clear-query" type="button" onClick={() => setQuery("")}>
@@ -291,7 +314,7 @@ export function CourseSearch({
               <span className="filter-heading-icon"><Icon name="filter" size={19} /></span>
               <h2>Filter courses</h2>
             </div>
-            {(appliedSubject || appliedLevel || appliedMode || draftSubject || draftLevel || draftMode) && (
+            {(appliedSubject || appliedLevel || appliedMode || appliedCampus || draftSubject || draftLevel || draftMode || draftCampus) && (
               <button type="button" className="clear-filters" onClick={clearFilters}>
                 Clear all
               </button>
@@ -372,7 +395,7 @@ export function CourseSearch({
             </div>
           </div>
 
-          {(appliedSubject || appliedLevel || appliedMode) && (
+          {(appliedSubject || appliedLevel || appliedMode || appliedCampus) && (
             <div className="active-filters" aria-label="Active filters">
               <span>Active:</span>
               {appliedSubject && (
@@ -388,6 +411,11 @@ export function CourseSearch({
               {appliedMode && (
                 <button type="button" onClick={() => removeFilter("mode")}>
                   {appliedMode}<Icon name="close" size={14} />
+                </button>
+              )}
+              {appliedCampus && (
+                <button type="button" onClick={() => removeFilter("campus")}>
+                  {appliedCampus}<Icon name="close" size={14} />
                 </button>
               )}
               <button type="button" className="active-clear" onClick={clearFilters}>
@@ -406,8 +434,8 @@ export function CourseSearch({
             <div className="empty-state">
               <span className="empty-state-icon"><Icon name="search" size={23} /></span>
               <p className="eyebrow">No matches just yet</p>
-              <h3>Try a different search.</h3>
-              <p>Change your keywords or clear the filters to see all courses in this sample.</p>
+              <h3>Try a different search or filter.</h3>
+              <p>Change your keywords or clear your filters to view all courses in this sample.</p>
               <button type="button" className="button button-outline" onClick={clearFilters}>
                 Clear search and filters <Icon name="arrow" size={17} />
               </button>
@@ -415,7 +443,7 @@ export function CourseSearch({
           )}
 
           <p className="results-data-note">
-            This demonstration uses five course examples supplied in the project brief. Course campus, start date, fees and other details were not included in the source sample.
+            <Icon name="sparkle" size={15} /> Dynamic course catalogue mapped from college course database models. Filterable across subjects, levels, study modes and campuses.
           </p>
         </section>
       </div>

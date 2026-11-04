@@ -33,6 +33,8 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, message: "Add your name, a valid email address and consent to continue." }, { status: 422 });
   }
 
+  const prefix = kind === "application" ? "CC-APP" : "CC-ENQ";
+
   try {
     const [saved] = await db.insert(courseEnquiries).values({
       fullName,
@@ -45,10 +47,10 @@ export async function POST(request: Request) {
       consent,
     }).returning({ id: courseEnquiries.id });
 
-    return Response.json({ ok: true, reference: `ENQ-${String(saved.id).padStart(5, "0")}` }, { status: 201 });
+    return Response.json({ ok: true, reference: `${prefix}-${String(saved.id).padStart(5, "0")}` }, { status: 201 });
   } catch (error) {
     console.warn("Database unavailable, falling back to simulated confirmation:", error);
     const mockId = Math.floor(10000 + Math.random() * 90000);
-    return Response.json({ ok: true, reference: `ENQ-${mockId}`, simulated: true }, { status: 201 });
+    return Response.json({ ok: true, reference: `${prefix}-${mockId}`, simulated: true }, { status: 201 });
   }
 }
