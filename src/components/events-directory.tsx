@@ -4,6 +4,19 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { showcaseEvent } from "@/lib/content";
 import { Icon } from "@/components/icon";
+import { CustomSelect } from "@/components/custom-select";
+
+const whenOptions = [
+  { value: "", label: "Any date" },
+  { value: "2026-11", label: "November 2026" },
+  { value: "other", label: "Other dates" },
+];
+
+const eventTypeOptions = [
+  { value: "", label: "All event types" },
+  { value: "Open evening", label: "Open evening" },
+  { value: "Workshop", label: "Workshop" },
+];
 
 export function EventsDirectory() {
   const [month, setMonth] = useState("");
@@ -18,8 +31,26 @@ export function EventsDirectory() {
       <div className="events-toolbar">
         <div><p className="eyebrow">What’s coming up</p><h2>{events.length} upcoming {events.length === 1 ? "event" : "events"}</h2></div>
         <div className="event-filter-fields">
-          <label className="form-field"><span>When</span><select value={month} onChange={(event) => setMonth(event.target.value)}><option value="">Any date</option><option value="2026-11">November 2026</option><option value="other">Other dates</option></select></label>
-          <label className="form-field"><span>Event type</span><select value={eventType} onChange={(event) => setEventType(event.target.value)}><option value="">All event types</option><option value="Open evening">Open evening</option><option value="Workshop">Workshop</option></select></label>
+          <div className="form-field">
+            <span>When</span>
+            <CustomSelect
+              value={month}
+              onChange={setMonth}
+              options={whenOptions}
+              placeholder="Any date"
+              aria-label="Filter events by date"
+            />
+          </div>
+          <div className="form-field">
+            <span>Event type</span>
+            <CustomSelect
+              value={eventType}
+              onChange={setEventType}
+              options={eventTypeOptions}
+              placeholder="All event types"
+              aria-label="Filter events by type"
+            />
+          </div>
         </div>
       </div>
       <div className="events-results" aria-live="polite">

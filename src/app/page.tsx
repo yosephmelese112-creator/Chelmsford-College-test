@@ -3,6 +3,7 @@ import { CourseCard } from "@/components/course-card";
 import { Icon } from "@/components/icon";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { HomeSearchForm } from "@/components/home-search-form";
 import { courses, showcaseEvent, subjectAreas } from "@/lib/content";
 
 export default function HomePage() {
@@ -39,21 +40,7 @@ export default function HomePage() {
               <span className="search-symbol"><Icon name="search" size={22} /></span>
               <div><p className="eyebrow">Start with a search</p><h2>What would you like to learn?</h2></div>
             </div>
-            <form className="course-search-form" action="/courses" method="get" role="search">
-              <label className="search-field search-keyword-field">
-                <span>Course or subject</span>
-                <span className="input-with-icon"><Icon name="search" size={19} /><input name="q" type="search" placeholder="Try fashion, digital or travel" /></span>
-              </label>
-              <label className="search-field">
-                <span>Subject area</span>
-                <select name="subject" defaultValue=""><option value="">All subjects</option>{subjectAreas.map((subject) => <option value={subject.name} key={subject.name}>{subject.name}</option>)}</select>
-              </label>
-              <label className="search-field search-level-field">
-                <span>Qualification level</span>
-                <select name="level" defaultValue=""><option value="">Any level</option><option>Level 2</option><option>Level 3</option></select>
-              </label>
-              <button className="button button-primary search-submit" type="submit">Search courses <Icon name="arrow" size={18} /></button>
-            </form>
+            <HomeSearchForm subjectAreas={subjectAreas} />
             <div className="search-panel-foot"><span>Need a wider view?</span><Link href="/courses">Browse all available courses <Icon name="arrow-up-right" size={15} /></Link></div>
           </div>
         </section>
