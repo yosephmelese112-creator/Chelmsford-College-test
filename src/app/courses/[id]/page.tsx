@@ -232,53 +232,6 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
               </div>
             </aside>
           </div>
-
-          {/* Technical Architecture & SQL Integration Handover (Tender Brief Requirement 4.C) */}
-          <details
-            className="tech-architecture-handover"
-            style={{
-              marginTop: "3.5rem",
-              padding: "1.5rem",
-              background: "#ffffff",
-              border: "1px solid var(--color-neutral-border)",
-              borderRadius: "14px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
-            }}
-          >
-            <summary
-              style={{
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: "1rem",
-                color: "var(--color-primary-blue)",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.6rem",
-              }}
-            >
-              <Icon name="sparkle" size={18} />
-              <span>Technical Architecture & SQL Integration Handover (Tender Brief Section 4.C)</span>
-            </summary>
-            <div style={{ marginTop: "1.25rem", paddingTop: "1.25rem", borderTop: "1px solid #f0f4f8", fontSize: "0.93rem", lineHeight: "1.65" }}>
-              <p style={{ fontWeight: 600, color: "var(--color-neutral-dark)", marginBottom: "0.5rem" }}>
-                Pipeline Architecture: <code style={{ background: "#eef4f9", padding: "2px 6px", borderRadius: "4px" }}>College SQL Database → Backend API → Course Data Model → Reusable Course Template</code>
-              </p>
-              <ul style={{ paddingLeft: "1.25rem", margin: "0.5rem 0 1rem" }}>
-                <li>
-                  <strong>1. SQL Storage Layer:</strong> Courses are defined in PostgreSQL/SQL Server (<code style={{ background: "#eef4f9", padding: "1px 5px", borderRadius: "3px" }}>college_courses</code> table in <code style={{ background: "#eef4f9", padding: "1px 5px", borderRadius: "3px" }}>src/db/schema.ts</code>) containing all fields from the college spreadsheet (title, level, duration, campus, modules, requirements, fees, progression).
-                </li>
-                <li>
-                  <strong>2. Backend API Endpoint:</strong> The Next.js REST API (<code style={{ background: "#eef4f9", padding: "1px 5px", borderRadius: "3px" }}>/api/courses/{course.id}</code>) queries the database, serializes structured JSON, and returns cache control headers (<code style={{ background: "#eef4f9", padding: "1px 5px", borderRadius: "3px" }}>s-maxage=300, stale-while-revalidate=600</code>) for sub-millisecond edge delivery.
-                </li>
-                <li>
-                  <strong>3. Reusable Dynamic Template:</strong> Single template (<code style={{ background: "#eef4f9", padding: "1px 5px", borderRadius: "3px" }}>src/app/courses/[id]/page.tsx</code>) dynamically handles all 5 sample courses with conditional rendering, strict null safety, and zero hard-coded content.
-                </li>
-                <li>
-                  <strong>4. Database Synchronization:</strong> Nightly batch sync from the college MIS (ProSolution / EBS / Unit-e) or webhook triggers an on-demand revalidation (<code style={{ background: "#eef4f9", padding: "1px 5px", borderRadius: "3px" }}>{"revalidatePath('/courses')"}</code>), instantly reflecting catalog updates on the public website without redeploying code.
-                </li>
-              </ul>
-            </div>
-          </details>
         </div>
 
         <div className="mobile-course-action">

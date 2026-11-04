@@ -90,7 +90,7 @@ export function CmsDemo() {
           </h1>
         </div>
         <div className="cms-prototype-label">
-          <span className="prototype-dot" /> CMS concept · Tender Brief Section 7
+          <span className="prototype-dot" /> Content Management Studio
         </div>
       </header>
 
@@ -639,7 +639,7 @@ export function CmsDemo() {
             <section className="cms-panel-content">
               <div className="cms-section-heading">
                 <div>
-                  <p className="eyebrow">Tender Brief Section 7 & 8</p>
+                  <p className="eyebrow">Enterprise publishing architecture</p>
                   <h2>Production CMS Evidence & Case Studies.</h2>
                   <p>
                     Documenting proven enterprise CMS implementations rather than fabricating an artificial backend.
@@ -730,7 +730,7 @@ export function CmsDemo() {
           <div className="cms-bottom-note">
             <Icon name="sparkle" size={16} />
             <span>
-              Concept authoring screens for procurement evaluation. Real-world delivery evidenced by our enterprise CMS credentials.
+              Content management interface designed for Chelmsford College marketing and curriculum teams.
             </span>
           </div>
         </div>

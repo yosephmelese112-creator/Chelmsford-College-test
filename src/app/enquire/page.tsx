@@ -60,7 +60,7 @@ export default async function EnquirePage({
                   <strong>{kind === "application" ? "Formal application guidance" : "Admissions advice"}</strong>
                   <p>
                     {kind === "application"
-                      ? "This prototype registers your formal course application interest. You will receive an application reference and direct instructions to submit your qualification certificates."
+                      ? "Submitting your details registers your formal course application interest. You will receive an application reference and direct instructions to submit your qualification certificates."
                       : "General and course-specific advice is provided free of charge by the Chelmsford College Careers Advice Zone."}
                   </p>
                 </div>
@@ -76,7 +76,7 @@ export default async function EnquirePage({
 
             <div className="enquiry-form-panel">
               <div className="form-panel-heading">
-                <p className="eyebrow">{kind === "application" ? "Step 1 of 2: Application details" : "A few details"}</p>
+                <p className="eyebrow">{kind === "application" ? "Application details" : "A few details"}</p>
                 <h2>{kind === "application" ? "Apply for September 2026" : "Let’s get started"}</h2>
                 <p>Required fields are marked with an asterisk (*).</p>
               </div>

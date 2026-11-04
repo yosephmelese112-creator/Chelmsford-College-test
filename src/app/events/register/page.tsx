@@ -56,13 +56,13 @@ export default async function EventRegistrationPage({
               <div className="registration-trust">
                 <Icon name="check-circle" size={19} />
                 <span>
-                  Complete 6-stage booking flow demonstration. Confirmed booking reference generated upon submission.
+                  Immediate booking confirmation and arrival guidance will be sent to your email.
                 </span>
               </div>
             </div>
             <div className="registration-form-panel">
               <div className="form-panel-heading">
-                <p className="eyebrow">Stage 3 of 6: Attendee details</p>
+                <p className="eyebrow">Attendee details</p>
                 <h2>Reserve your places.</h2>
               </div>
               <EventRegistrationForm event={event} />

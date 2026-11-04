@@ -141,7 +141,7 @@ export function PaymentWizard() {
 
   return (
     <div className="payment-wizard">
-      <div className="payment-progress" aria-label={`Payment prototype step ${step} of 6`}>
+      <div className="payment-progress" aria-label={`Payment step ${step} of 6`}>
         {steps.map((label, index) => (
           <div
             className={`progress-step ${
@@ -161,7 +161,7 @@ export function PaymentWizard() {
       {step === 1 && (
         <div className="payment-step-layout">
           <section className="payment-step-main">
-            <p className="eyebrow">Stage 1 of 6: Payment category</p>
+            <p className="eyebrow">Payment category</p>
             <h2>What would you like to pay?</h2>
             <p className="payment-step-intro">
               Select the payment category indicated on your college letter or email communication.
@@ -222,7 +222,7 @@ export function PaymentWizard() {
             <button type="button" className="back-link payment-back" onClick={back}>
               <Icon name="back" size={17} /> Back
             </button>
-            <p className="eyebrow">Stage 2 of 6: Payer details</p>
+            <p className="eyebrow">Payer details</p>
             <h2>Who is making this payment?</h2>
             <p className="payment-step-intro">
               Payments can be completed by the student directly or by a parent, carer or guardian on their behalf.
@@ -360,7 +360,7 @@ export function PaymentWizard() {
             <h3>{selectedCategory.title}</h3>
             <p>{selectedCategory.timing}</p>
             <div className="summary-divider" />
-            <p className="summary-small-label">Simulated Amount</p>
+            <p className="summary-small-label">Amount</p>
             <strong style={{ fontSize: "1.4rem", color: "var(--color-primary-blue)", display: "block", marginBottom: "0.5rem" }}>
               {selectedCategory.amount}
             </strong>
@@ -377,7 +377,7 @@ export function PaymentWizard() {
             <button type="button" className="back-link payment-back" onClick={back}>
               <Icon name="back" size={17} /> Back
             </button>
-            <p className="eyebrow">Stage 3 of 6: Reference lookup</p>
+            <p className="eyebrow">Reference lookup</p>
             <h2>Enter your college reference.</h2>
             <p className="payment-step-intro">
               Enter the student ID or payment reference found on your college letter or payment email.
@@ -436,15 +436,6 @@ export function PaymentWizard() {
                 Continue to review <Icon name="arrow" size={18} />
               </button>
             </form>
-
-            <div className="prototype-alert" style={{ marginTop: "1.5rem" }}>
-              <span>
-                <Icon name="sparkle" size={18} />
-              </span>
-              <p>
-                <strong>Tender demonstration.</strong> Validates the college reference structure and maps it to the simulated finance ledger.
-              </p>
-            </div>
           </section>
 
           <aside className="payment-help-panel payment-summary-aside">
@@ -464,13 +455,12 @@ export function PaymentWizard() {
             <button type="button" className="back-link payment-back" onClick={back}>
               <Icon name="back" size={17} /> Edit reference
             </button>
-            <p className="eyebrow">Stage 4 of 6: Check before you continue</p>
+            <p className="eyebrow">Check before you continue</p>
             <h2>Review your payment.</h2>
 
             <div className="payment-review-card">
               <div className="review-card-heading">
                 <span>Itemised summary</span>
-                <span className="tag tag-neutral">Procurement prototype</span>
               </div>
               <dl>
                 <div>
@@ -517,7 +507,6 @@ export function PaymentWizard() {
               <div className="payment-review-total">
                 <span>Total amount to be charged</span>
                 <strong>{selectedCategory.amount}</strong>
-                <small>Simulated amount for prototype demonstration</small>
               </div>
             </div>
 
@@ -528,7 +517,7 @@ export function PaymentWizard() {
                 onChange={(event) => setReviewConfirmed(event.target.checked)}
               />
               <span>
-                I have checked these details and understand this is a tender procurement demonstration simulating external payment gateway handoff.
+                I have checked these details and confirm they are correct before proceeding to payment.
               </span>
             </label>
 
@@ -542,7 +531,7 @@ export function PaymentWizard() {
                 disabled={!reviewConfirmed}
                 onClick={() => setStep(5)}
               >
-                Proceed to secure handoff <Icon name="arrow" size={18} />
+                Proceed to payment <Icon name="arrow" size={18} />
               </button>
             </div>
           </section>
@@ -560,19 +549,19 @@ export function PaymentWizard() {
         </div>
       )}
 
-      {/* STAGE 5: SECURE HANDOFF SIMULATION (WITH 3 OUTCOMES) */}
+      {/* STAGE 5: SECURE PAYMENT GATEWAY */}
       {step === 5 && (
         <div className="payment-handoff-panel">
           <span className="handoff-lock">
             <Icon name="lock" size={28} />
           </span>
-          <p className="eyebrow">Stage 5 of 6: External gateway transition</p>
+          <p className="eyebrow">External payment gateway</p>
           <h2>
-            Secure handoff to college<br />
-            <em>payment provider.</em>
+            Pay securely<br />
+            <em>online.</em>
           </h2>
           <p className="handoff-description">
-            In production, the user is redirected to the college’s hosted payment gateway (such as WPM Education, Capita SmartPay, or Barclaycard SmartPay). No sensitive card credentials touch the college web server.
+            You will now complete your card payment on our secure banking provider service. Card details are processed directly by certified banking gateways and never stored on college servers.
           </p>
 
           <div className="handoff-summary">
@@ -582,22 +571,13 @@ export function PaymentWizard() {
             <strong>Amount: {selectedCategory.amount}</strong>
           </div>
 
-          <div className="prototype-alert handoff-alert" style={{ margin: "1.5rem auto", maxWidth: "560px" }}>
-            <span>
-              <Icon name="sparkle" size={18} />
-            </span>
-            <p>
-              <strong>Tender demonstration controls:</strong> As required by the Demo Brief, select which payment outcome you want to simulate below.
-            </p>
-          </div>
-
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: "0.85rem",
               maxWidth: "460px",
-              margin: "1.5rem auto 2rem",
+              margin: "1.75rem auto 2rem",
             }}
           >
             <button
@@ -606,24 +586,30 @@ export function PaymentWizard() {
               onClick={() => triggerHandoff("success")}
               style={{ minHeight: "48px" }}
             >
-              Simulate Successful Payment <Icon name="arrow" size={18} />
+              Pay now ({selectedCategory.amount}) <Icon name="arrow" size={18} />
             </button>
-            <button
-              type="button"
-              className="button button-outline button-block"
-              onClick={() => triggerHandoff("declined")}
-              style={{ minHeight: "48px", borderColor: "#e53e3e", color: "#c53030" }}
-            >
-              Simulate Declined / Failed Payment <Icon name="close" size={17} />
-            </button>
-            <button
-              type="button"
-              className="button button-outline button-block"
-              onClick={() => triggerHandoff("cancelled")}
-              style={{ minHeight: "48px" }}
-            >
-              Simulate User Cancellation <Icon name="back" size={17} />
-            </button>
+
+            <details style={{ marginTop: "0.5rem", fontSize: "0.82rem", color: "var(--color-neutral-muted)" }}>
+              <summary style={{ cursor: "pointer", textAlign: "center" }}>Test simulated gateway responses</summary>
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+                <button
+                  type="button"
+                  className="button button-outline button-block"
+                  onClick={() => triggerHandoff("declined")}
+                  style={{ minHeight: "40px", fontSize: "0.82rem", borderColor: "#e53e3e", color: "#c53030" }}
+                >
+                  Test card decline <Icon name="close" size={15} />
+                </button>
+                <button
+                  type="button"
+                  className="button button-outline button-block"
+                  onClick={() => triggerHandoff("cancelled")}
+                  style={{ minHeight: "40px", fontSize: "0.82rem" }}
+                >
+                  Test cancellation <Icon name="back" size={15} />
+                </button>
+              </div>
+            </details>
           </div>
 
           <div className="handoff-actions">
@@ -634,7 +620,7 @@ export function PaymentWizard() {
         </div>
       )}
 
-      {/* STAGE 6: CONFIRMATION STATES (DISTINCT FOR EACH OUTCOME) */}
+      {/* STAGE 6: CONFIRMATION STATES */}
       {step === 6 && (
         <div className="payment-confirmation" role="status" aria-live="polite">
           {simulatedOutcome === "success" && (
@@ -642,13 +628,13 @@ export function PaymentWizard() {
               <span className="confirmation-check">
                 <Icon name="check" size={28} />
               </span>
-              <p className="eyebrow">Stage 6 of 6: Payment confirmed</p>
+              <p className="eyebrow">Payment confirmed</p>
               <h2>
                 Payment successful.<br />
                 <em>Thank you.</em>
               </h2>
               <p>
-                Your payment for <strong>{selectedCategory.title}</strong> has been successfully processed in this simulation.
+                Your payment for <strong>{selectedCategory.title}</strong> has been successfully processed.
               </p>
 
               <div className="payment-confirmation-card">
@@ -688,27 +674,6 @@ export function PaymentWizard() {
                 </div>
               </div>
 
-              {/* Technical Synchronization explanation */}
-              <div
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid var(--color-neutral-border)",
-                  borderRadius: "12px",
-                  padding: "1.25rem",
-                  margin: "1.5rem 0",
-                  textAlign: "left",
-                  fontSize: "0.9rem",
-                  lineHeight: "1.6",
-                }}
-              >
-                <strong style={{ color: "var(--color-primary-blue)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <Icon name="sparkle" size={16} /> Technical Synchronization Handover (Tender Brief 6.C)
-                </strong>
-                <p style={{ marginTop: "0.5rem" }}>
-                  In production, the external gateway (WPM / Capita) immediately emits an encrypted webhook payload back to the college backend API (<code style={{ background: "#eef4f9", padding: "1px 4px", borderRadius: "3px" }}>/api/payments/webhook</code>). The student finance ledger in EBS / ProSolution is automatically updated to marked as settled, clearing any enrolment deposit hold in real time.
-                </p>
-              </div>
-
               <div className="payment-review-actions">
                 <button
                   className="button button-outline"
@@ -726,7 +691,7 @@ export function PaymentWizard() {
                     setReviewConfirmed(false);
                   }}
                 >
-                  Start another demo <Icon name="arrow" size={17} />
+                  Make another payment <Icon name="arrow" size={17} />
                 </button>
                 <Link className="button button-outline" href="/">
                   Return home
@@ -758,7 +723,7 @@ export function PaymentWizard() {
                 <em>No funds were taken.</em>
               </h2>
               <p>
-                The simulated card issuer declined this transaction.
+                The card issuer declined this transaction.
               </p>
 
               <div

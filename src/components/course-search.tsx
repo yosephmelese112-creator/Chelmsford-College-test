@@ -441,10 +441,6 @@ export function CourseSearch({
               </button>
             </div>
           )}
-
-          <p className="results-data-note">
-            <Icon name="sparkle" size={15} /> Dynamic course catalogue mapped from college course database models. Filterable across subjects, levels, study modes and campuses.
-          </p>
         </section>
       </div>
 

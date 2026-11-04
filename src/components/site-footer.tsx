@@ -36,7 +36,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="footer-bottom shell">
-        <p>© Chelmsford College · Interactive prototype</p>
+        <p>© Chelmsford College. All rights reserved.</p>
         <p className="photo-credit">{photographyNote}</p>
         <div className="footer-tools"><Link href="/design-system">Design system</Link><Link href="/cms">CMS demo</Link></div>
       </div>

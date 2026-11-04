@@ -50,7 +50,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               <Link className="button button-green event-register-cta" href={bookingUrl}>
                 Book your free place <Icon name="arrow" size={18} />
               </Link>
-              <p className="event-prototype-note">Complete booking flow demonstration · reserves a simulated visit place.</p>
             </div>
           </section>
           <div className="event-detail-layout">

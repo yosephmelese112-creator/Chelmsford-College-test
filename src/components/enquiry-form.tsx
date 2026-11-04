@@ -97,12 +97,6 @@ export function EnquiryForm({
           </ul>
         </div>
 
-        {isApplication && (
-          <p className="form-legal-note">
-            This demonstration simulates the college application pre-enrolment workflow. In production, this synchronises with the college EBS / ProSolution student record system.
-          </p>
-        )}
-
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
           <Link className="button button-outline" href={courseId ? `/courses/${courseId}` : "/courses"}>
             {courseId ? "Back to course details" : "Explore courses"} <Icon name="arrow" size={17} />
@@ -222,7 +216,7 @@ export function EnquiryForm({
 
       <p className="form-legal-note">
         {isApp
-          ? "Demonstration application flow. Submitting registers an official application enquiry for admissions review."
+          ? "Submitting registers your application for admissions team review."
           : "Your enquiry is directed to our Careers Advice Zone advisers."}
       </p>
     </form>

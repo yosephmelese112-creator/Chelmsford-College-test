@@ -74,7 +74,6 @@ export default function HomePage() {
             <div className="course-card-grid">
               {featuredCourses.map((course, index) => <CourseCard course={course} index={index} key={course.id} />)}
             </div>
-            <p className="data-note"><Icon name="sparkle" size={15} /> Course details shown are limited to the information available in this prototype.</p>
           </div>
         </section>
 

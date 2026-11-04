@@ -64,3 +64,4 @@ export async function GET(
     dataSource: "content_catalog",
   });
 }
+

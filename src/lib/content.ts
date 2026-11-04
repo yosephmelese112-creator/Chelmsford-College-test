@@ -18,7 +18,7 @@ export type Course = {
   imageAlt: string;
 };
 
-// Course records structured around the college SQL dataset and tender specification.
+// College course catalogue.
 export const courses: Course[] = [
   {
     id: "fashion-l3",

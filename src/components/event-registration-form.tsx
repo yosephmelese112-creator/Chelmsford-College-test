@@ -122,7 +122,7 @@ export function EventRegistrationForm({ event = showcaseEvent }: { event?: Event
         <span className="success-icon">
           <Icon name="check-circle" size={32} />
         </span>
-        <p className="eyebrow">Booking confirmed · Prototype</p>
+        <p className="eyebrow">Booking confirmed</p>
         <h2>You’re booked in, {fullName.split(" ")[0] || "there"}!</h2>
         <p>
           We’ve reserved your free places for the <strong>{event.title}</strong>. A confirmation has been prepared for your visit.
@@ -166,13 +166,6 @@ export function EventRegistrationForm({ event = showcaseEvent }: { event?: Event
               <strong>{email}</strong>
             </div>
           </div>
-        </div>
-
-        <div className="prototype-alert" style={{ marginBottom: "1.5rem", textAlign: "left" }}>
-          <span><Icon name="sparkle" size={18} /></span>
-          <p>
-            <strong>Demonstration booking prototype.</strong> This simulates the full booking journey required by the tender brief. In production, this integrates with the college’s visitor management and CRM systems.
-          </p>
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
@@ -301,7 +294,7 @@ export function EventRegistrationForm({ event = showcaseEvent }: { event?: Event
       </button>
 
       <p className="form-legal-note">
-        Complete 6-step event booking demonstration. Data is recorded to demonstrate procurement requirements.
+        Your details will only be used by Chelmsford College to manage your visit.
       </p>
     </form>
   );
