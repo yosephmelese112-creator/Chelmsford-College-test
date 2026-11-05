@@ -1021,8 +1021,8 @@ button { color: inherit; }
 .hero-photo-note {
   position: absolute;
   z-index: 2;
-  top: 21px;
-  right: 19px;
+  top: 4.8rem;
+  right: 1.25rem;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -1036,6 +1036,17 @@ button { color: inherit; }
   font-size: 13px;
   font-weight: 700;
   font-family: var(--font-heading);
+}
+
+.hero-video-toggle:hover {
+  background: var(--navy) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(11, 37, 69, 0.35) !important;
+}
+.hero-video-toggle:focus-visible {
+  outline: 3px solid var(--green) !important;
+  outline-offset: 3px;
 }
 
 /* Home search panel */
@@ -3300,7 +3311,8 @@ button { color: inherit; }
   .hero-actions .button { min-height: 48px; padding-inline: 16px; font-size: 14px; }
   .hero-footnote { margin-top: 16px; font-size: 13px; }
   .hero-photo { height: clamp(270px, 66vw, 415px); border-top-right-radius: 52px; }
-  .hero-photo-note { top: 14px; right: 14px; }
+  .hero-photo-note { top: 60px; right: 14px; }
+  .hero-video-toggle { top: 10px !important; right: 14px !important; }
   .hero-photo-note span { padding: 6px 10px; font-size: 13px; }
   .home-search-panel { margin-top: 18px; padding: 18px; }
   .search-panel-intro { margin-bottom: 14px; }
