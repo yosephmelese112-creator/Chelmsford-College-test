@@ -20,7 +20,8 @@ type IconName =
   | "check-circle"
   | "lock"
   | "plus"
-  | "play";
+  | "play"
+  | "book";
 
 const shapes: Record<IconName, ReactNode> = {
   arrow: <><path d="M4 12h15" /><path d="m13 5 7 7-7 7" /></>,
@@ -43,6 +44,7 @@ const shapes: Record<IconName, ReactNode> = {
   lock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
   play: <><circle cx="12" cy="12" r="9" /><path d="m10 8 6 4-6 4V8Z" /></>,
+  book: <><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" /><path d="M6 2v20" /></>,
 };
 
 export function Icon({

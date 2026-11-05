@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
-import { showcaseEvent } from "@/lib/content";
+import { showcaseEvent, courses } from "@/lib/content";
 
-type Panel = "dashboard" | "content" | "campaign" | "event" | "media" | "evidence";
+export type Panel = "dashboard" | "content" | "campaign" | "event" | "media" | "sql" | "evidence";
 type PreviewSize = "desktop" | "tablet" | "mobile";
 
 const panelLabels: Record<Panel, string> = {
@@ -14,6 +14,7 @@ const panelLabels: Record<Panel, string> = {
   campaign: "Homepage campaign",
   event: "Events",
   media: "Media library",
+  sql: "SQL data architecture",
   evidence: "Previous work evidence",
 };
 
@@ -25,8 +26,30 @@ const mediaItems = [
   { src: "/images/student-library.jpg", title: "Awards & achievement", alt: "A student celebrating their award and certificate with tutors at Chelmsford College." },
 ];
 
-export function CmsDemo() {
-  const [panel, setPanel] = useState<Panel>("dashboard");
+const columnMappingRows = [
+  { source: "C_ID", template: "URL route slug / identifier (/courses/[id])", sample: "374 (fashion-l3), 553 (digital-it-l2)" },
+  { source: "C_TITLE", template: "Course title (h1) & metadata heading", sample: "Gateway Diploma in Digital and IT Skills, Level 2" },
+  { source: "C_SECTION", template: "Subject Area / Department tag (joined from course_sections.S_TITLE)", sample: "ICT & Digital Skills, Creative Industries, Construction" },
+  { source: "C_STARTDATE", template: "Prominent Start Date in top key facts", sample: "September 2026 (converted from Excel serial 46266)" },
+  { source: "C_MODE", template: "Study mode badge & filter (Full-time / Online)", sample: "FT → Full-time, Online" },
+  { source: "C_DURATION", template: "Duration key fact card", sample: "1 year, 2 years" },
+  { source: "C_QUALIFICATION", template: "Qualification subtitle & formal accreditation", sample: "Gateway Qualifications Level 2 Diploma in Digital and IT Skills" },
+  { source: "C_STUDYOVERVIEW", template: "Study Overview (formatted HTML)", sample: "Mandatory units, computing labs, project briefs" },
+  { source: "C_COURSEFORME", template: "Is this course for me? (accordion section)", sample: "Suitability, career vision & prior interests" },
+  { source: "C_ELIGIBILITY", template: "Entry requirements and eligibility (parsed list & HTML)", sample: "3 GCSEs at grades 9-3 including English & Maths" },
+  { source: "C_ASSESSMENT", template: "How you'll be assessed (accordion section)", sample: "Assignment-based assessment & synoptic computing challenge" },
+  { source: "C_EMPLOYABILITY", template: "Career opportunities & progression", sample: "Progression to Level 3 IT / T Levels / Helpdesk apprenticeships" },
+  { source: "C_FEES", template: "Course fees & financial support", sample: "Free for under 19s, Advanced Learner Loans for 19+" },
+  { source: "C_ADDITIONALFEES", template: "Additional fees & equipment costs", sample: "£50 trip fee (Digital IT), £80 materials (Fashion)" },
+  { source: "C_FUNDING", template: "Funding eligibility tags (joined from course_funding.F_TITLE)", sample: "16-18 funded, Adult Education / 19+, Advanced Learner Loans" },
+  { source: "C_CONTACT", template: "Department course contact email & phone", sample: "careersadvicezone@chelmsford.ac.uk" },
+  { source: "C_ADDITIONALQUALS", template: "Additional qualifications included", sample: "First aid / health & safety certification where applicable" },
+  { source: "Skills Extraction", template: "Skills you'll gain (derived concise badges from syllabus text)", sample: "Web design, Database design, Cybersecurity fundamentals" },
+  { source: "Campus", template: "Campus location (clearly identified as illustrative)", sample: "Moulsham Street campus (illustrative)" },
+];
+
+export function CmsDemo({ initialPanel = "dashboard" }: { initialPanel?: Panel }) {
+  const [panel, setPanel] = useState<Panel>(initialPanel);
   const [preview, setPreview] = useState(false);
   const [eventPreview, setEventPreview] = useState(false);
   const [previewSize, setPreviewSize] = useState<PreviewSize>("desktop");
@@ -44,6 +67,17 @@ export function CmsDemo() {
   const [saved, setSaved] = useState(false);
   const [localImage, setLocalImage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+
+  // Live SQL / API inspector state
+  const [apiTesting, setApiTesting] = useState(false);
+  const [apiResponse, setApiResponse] = useState<string>("");
+
+  // Sync panel if initialPanel prop changes
+  const [prevInitialPanel, setPrevInitialPanel] = useState(initialPanel);
+  if (initialPanel && initialPanel !== prevInitialPanel) {
+    setPrevInitialPanel(initialPanel);
+    setPanel(initialPanel);
+  }
 
   function saveDraft() {
     setSaved(true);
@@ -65,6 +99,20 @@ export function CmsDemo() {
     setPreview(false);
     setEventPreview(false);
     setStatusMessage("");
+  }
+
+  async function testApiEndpoint(url: string) {
+    setApiTesting(true);
+    setApiResponse("Fetching data from " + url + "...");
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      setApiResponse(JSON.stringify(data, null, 2));
+    } catch (err: unknown) {
+      setApiResponse("Error fetching endpoint: " + String(err));
+    } finally {
+      setApiTesting(false);
+    }
   }
 
   const statusChip = (
@@ -142,6 +190,7 @@ export function CmsDemo() {
               </Link>
             </div>
           </div>
+
           {statusMessage && (
             <p className="cms-status-message" role="status" aria-live="polite">
               <Icon name="check-circle" size={17} />
@@ -211,6 +260,17 @@ export function CmsDemo() {
                 <button
                   className="cms-dashboard-card"
                   type="button"
+                  onClick={() => selectPanel("sql")}
+                >
+                  <span className="cms-card-kicker">Database integration</span>
+                  <strong>SQL Data Architecture</strong>
+                  <small>
+                    Inspect relational mapping pipeline <Icon name="arrow-up-right" size={15} />
+                  </small>
+                </button>
+                <button
+                  className="cms-dashboard-card"
+                  type="button"
                   onClick={() => selectPanel("evidence")}
                 >
                   <span className="cms-card-kicker">Credentials & Case Studies</span>
@@ -239,7 +299,7 @@ export function CmsDemo() {
                   <Icon name="plus" size={16} /> New draft
                 </button>
               </div>
-              <div className="cms-content-table">
+              <div className="cms-content-table" style={{ overflowX: "auto" }}>
                 <div className="cms-table-head">
                   <span>Content</span>
                   <span>Type</span>
@@ -265,209 +325,308 @@ export function CmsDemo() {
                   onClick={() => selectPanel("event")}
                 >
                   <span>
-                    <strong>{showcaseEvent.title}</strong>
-                    <small>{showcaseEvent.dateLabel}</small>
+                    <strong>{eventTitle}</strong>
+                    <small>{eventDate}</small>
                   </span>
                   <span>Event</span>
-                  <span className="table-status status-example">Sample content</span>
+                  <span className="table-status status-example">Example</span>
                   <Icon name="arrow-up-right" size={18} />
                 </button>
-                <Link className="cms-content-row" href="/courses">
+                <button
+                  className="cms-content-row"
+                  type="button"
+                  onClick={() => selectPanel("sql")}
+                >
                   <span>
-                    <strong>Course catalogue</strong>
-                    <small>Mapped dynamically from college SQL dataset</small>
+                    <strong>Course catalogue database ({courses.length} courses)</strong>
+                    <small>Relational SQL ingestion pipeline & schema mapper</small>
                   </span>
-                  <span>SQL Linked</span>
-                  <span className="table-status status-linked">Dynamic API</span>
+                  <span>Catalogue</span>
+                  <span className="table-status status-linked">SQL Ready</span>
                   <Icon name="arrow-up-right" size={18} />
-                </Link>
+                </button>
               </div>
             </section>
           )}
 
+          {/* SQL DATA ARCHITECTURE & INTEGRATION PANEL (Section 3 & Tender Brief) */}
+          {panel === "sql" && (
+            <section className="cms-panel-content">
+              <div className="cms-section-heading">
+                <div>
+                  <p className="eyebrow">Tender Brief Section 2 & Bidder Response Alignment</p>
+                  <h2>SQL Database Integration & Data Architecture</h2>
+                  <p>
+                    Demonstrates how course pages are generated dynamically from college SQL tables, mapping all source columns into the reusable template without hardcoded values.
+                  </p>
+                </div>
+                <span className="table-status status-linked">33 Courses Ingested</span>
+              </div>
+
+              {/* Data Flow Diagram */}
+              <div
+                style={{
+                  padding: "1.5rem",
+                  background: "var(--surface)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "8px",
+                  marginBottom: "2rem",
+                }}
+              >
+                <h3 style={{ margin: "0 0 1rem", fontSize: "1.15rem", color: "var(--navy)" }}>
+                  Implementation Data Flow Architecture
+                </h3>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: "1rem",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ background: "#ffffff", padding: "1rem", borderRadius: "6px", border: "1px solid var(--line)" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--blue-700)" }}>STEP 01</span>
+                    <strong style={{ display: "block", color: "var(--navy)", margin: "4px 0" }}>SQL Course Database</strong>
+                    <small style={{ color: "var(--body)" }}>6 relational tables (courses, sections, levels, links, funding)</small>
+                  </div>
+                  <div style={{ background: "#ffffff", padding: "1rem", borderRadius: "6px", border: "1px solid var(--line)" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--blue-700)" }}>STEP 02</span>
+                    <strong style={{ display: "block", color: "var(--navy)", margin: "4px 0" }}>Data Ingestion Script</strong>
+                    <small style={{ color: "var(--body)" }}>scripts/build-course-data.py relational joins & skills extraction</small>
+                  </div>
+                  <div style={{ background: "#ffffff", padding: "1rem", borderRadius: "6px", border: "1px solid var(--line)" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--blue-700)" }}>STEP 03</span>
+                    <strong style={{ display: "block", color: "var(--navy)", margin: "4px 0" }}>REST API / JSON</strong>
+                    <small style={{ color: "var(--body)" }}>Typed schemas via /api/courses and src/lib/courses-data.ts</small>
+                  </div>
+                  <div style={{ background: "#ffffff", padding: "1rem", borderRadius: "6px", border: "1px solid var(--line)" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--green-700)" }}>STEP 04</span>
+                    <strong style={{ display: "block", color: "var(--navy)", margin: "4px 0" }}>Reusable Course Template</strong>
+                    <small style={{ color: "var(--body)" }}>src/app/courses/[id]/page.tsx renders all 33 courses mobile-first</small>
+                  </div>
+                </div>
+              </div>
+
+              {/* Complete Column-to-Template Mapping Table */}
+              <div style={{ marginBottom: "2.5rem" }}>
+                <h3 style={{ fontSize: "1.2rem", color: "var(--navy)", marginBottom: "0.75rem" }}>
+                  Complete Course Information Source Mapping (Appendix 2 Excel Schema)
+                </h3>
+                <p style={{ color: "var(--body)", fontSize: "0.92rem", marginBottom: "1rem" }}>
+                  Every available source column is mapped to a dedicated semantic section on the course detail page.
+                </p>
+
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-label="SQL column mapping table. Use arrow keys to scroll."
+                  style={{
+                    overflowX: "auto",
+                    border: "1px solid var(--line)",
+                    borderRadius: "8px",
+                    background: "#ffffff",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      minWidth: "640px",
+                      borderCollapse: "collapse",
+                      fontSize: "0.88rem",
+                      textAlign: "left",
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ background: "var(--surface)", borderBottom: "2px solid var(--line)" }}>
+                        <th style={{ padding: "0.75rem 1rem", color: "var(--navy)", fontWeight: 800 }}>Source Column</th>
+                        <th style={{ padding: "0.75rem 1rem", color: "var(--blue-700)", fontWeight: 800 }}>Course Template Section</th>
+                        <th style={{ padding: "0.75rem 1rem", color: "var(--navy)", fontWeight: 800 }}>Sample Mapped Content</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {columnMappingRows.map((row, idx) => (
+                        <tr
+                          key={row.source}
+                          style={{
+                            borderBottom: idx < columnMappingRows.length - 1 ? "1px solid var(--line)" : "none",
+                            background: idx % 2 === 1 ? "var(--surface)" : "#ffffff",
+                          }}
+                        >
+                          <td style={{ padding: "0.75rem 1rem", fontWeight: 700, fontFamily: "monospace", color: "var(--navy)" }}>
+                            {row.source}
+                          </td>
+                          <td style={{ padding: "0.75rem 1rem", color: "var(--body)", fontWeight: 600 }}>
+                            {row.template}
+                          </td>
+                          <td style={{ padding: "0.75rem 1rem", color: "var(--color-neutral-muted)" }}>
+                            {row.sample}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Interactive Live API Tester */}
+              <div
+                style={{
+                  padding: "1.5rem",
+                  background: "var(--surface)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "8px",
+                  marginBottom: "2rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+                  <div>
+                    <h3 style={{ margin: 0, color: "var(--navy)", fontSize: "1.15rem" }}>
+                      Live API / JSON Ingestion Inspector
+                    </h3>
+                    <p style={{ margin: "4px 0 0", color: "var(--body)", fontSize: "0.88rem" }}>
+                      Test live endpoint responses served from the course dataset.
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="button button-outline button-small"
+                      onClick={() => testApiEndpoint("/api/courses")}
+                      disabled={apiTesting}
+                    >
+                      GET /api/courses ({courses.length})
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-primary button-small"
+                      onClick={() => testApiEndpoint("/api/courses/digital-it-l2")}
+                      disabled={apiTesting}
+                    >
+                      GET /api/courses/digital-it-l2 (Course 553)
+                    </button>
+                  </div>
+                </div>
+
+                {apiResponse && (
+                  <pre
+                    tabIndex={0}
+                    role="region"
+                    aria-label="API response JSON"
+                    style={{
+                      maxHeight: "260px",
+                      overflowY: "auto",
+                      background: "var(--navy)",
+                      color: "#a9df81",
+                      padding: "1rem",
+                      borderRadius: "6px",
+                      fontSize: "0.82rem",
+                      fontFamily: "monospace",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    {apiResponse}
+                  </pre>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* HOMEPAGE CAMPAIGN EDITOR */}
           {panel === "campaign" && (
             <section className="cms-panel-content">
               <div className="cms-section-heading">
                 <div>
-                  <p className="eyebrow">Homepage campaign</p>
-                  <h2>{preview ? "Preview campaign" : "Edit campaign."}</h2>
-                  <p>Update campaign copy, media type, and CTA button before previewing.</p>
+                  <p className="eyebrow">Campaign editor</p>
+                  <h2>{preview ? "Preview campaign" : "Homepage hero campaign."}</h2>
+                  <p>Update headline, messaging, media asset, and primary call-to-action.</p>
                 </div>
-                {statusChip}
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    className="button button-outline button-small"
+                    onClick={() => setPreview((p) => !p)}
+                  >
+                    <Icon name="play" size={15} /> {preview ? "Exit preview" : "Interactive preview"}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-primary button-small"
+                    onClick={togglePublish}
+                  >
+                    {published ? "Unpublish" : "Publish campaign"}
+                  </button>
+                </div>
               </div>
 
-              {preview ? (
-                <div className="cms-preview-wrap">
-                  <div className="cms-preview-toolbar">
-                    <span>Responsive preview</span>
-                    <div className="preview-size-toggle" role="group" aria-label="Choose preview size">
-                      {(["desktop", "tablet", "mobile"] as PreviewSize[]).map((size) => (
-                        <button
-                          className={previewSize === size ? "is-selected" : ""}
-                          type="button"
-                          key={size}
-                          aria-pressed={previewSize === size}
-                          onClick={() => setPreviewSize(size)}
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={`cms-live-preview preview-${previewSize}`}>
-                    <div className="preview-browser-bar">
-                      <span />
-                      <span />
-                      <span />
-                      <small>chelmsford.ac.uk</small>
-                    </div>
-                    <div className="live-preview-content">
-                      <div>
-                        <p className="eyebrow">A place to find your thing</p>
-                        <h3>{campaignTitle}</h3>
-                        <p>{campaignIntro}</p>
-                        <span className="preview-cta">
-                          {campaignCtaLabel} <Icon name="arrow" size={15} />
-                        </span>
-                      </div>
-                      <div style={{ position: "relative" }}>
-                        <img
-                          src="/images/students-collaborating.jpg"
-                          alt="Illustrative preview of campaign students."
-                        />
-                        {campaignMediaType === "video" && (
-                          <span
-                            style={{
-                              position: "absolute",
-                              bottom: "8px",
-                              right: "8px",
-                              background: "rgba(0,0,0,0.75)",
-                              color: "#fff",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "0.75rem",
-                              fontWeight: 700,
-                            }}
-                          >
-                            ▶ Campus video enabled
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="cms-editor-actions">
-                    <button
-                      className="button button-outline"
-                      type="button"
-                      onClick={() => setPreview(false)}
-                    >
-                      <Icon name="back" size={16} /> Back to edit
-                    </button>
-                    <button
-                      className="button button-primary"
-                      type="button"
-                      onClick={togglePublish}
-                    >
-                      {published ? "Unpublish demo" : "Publish demo"}
-                      <Icon name="arrow" size={17} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
+              {!preview ? (
                 <div className="cms-editor-form">
-                  <label className="form-field">
-                    <span>Campaign headline *</span>
+                  <div className="form-field">
+                    <label htmlFor="campaign-headline">Campaign heading *</label>
                     <input
+                      id="campaign-headline"
                       value={campaignTitle}
-                      onChange={(event) => {
-                        setCampaignTitle(event.target.value);
+                      onChange={(e) => {
+                        setCampaignTitle(e.target.value);
                         setSaved(false);
                       }}
                       maxLength={120}
                     />
-                  </label>
-
-                  <label className="form-field">
-                    <span>Supporting copy *</span>
-                    <textarea
-                      value={campaignIntro}
-                      onChange={(event) => {
-                        setCampaignIntro(event.target.value);
-                        setSaved(false);
-                      }}
-                      rows={4}
-                      maxLength={500}
-                    />
-                  </label>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                    <label className="form-field">
-                      <span>CTA button label *</span>
-                      <input
-                        value={campaignCtaLabel}
-                        onChange={(e) => {
-                          setCampaignCtaLabel(e.target.value);
-                          setSaved(false);
-                        }}
-                        placeholder="e.g. Find your course"
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>CTA button link URL *</span>
-                      <input
-                        value={campaignCtaUrl}
-                        onChange={(e) => {
-                          setCampaignCtaUrl(e.target.value);
-                          setSaved(false);
-                        }}
-                        placeholder="e.g. /courses"
-                      />
-                    </label>
                   </div>
 
                   <div className="form-field">
-                    <span style={{ fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>
-                      Hero media format
-                    </span>
-                    <div style={{ display: "flex", gap: "1rem" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                    <label htmlFor="campaign-intro">Campaign description *</label>
+                    <textarea
+                      id="campaign-intro"
+                      rows={3}
+                      value={campaignIntro}
+                      onChange={(e) => {
+                        setCampaignIntro(e.target.value);
+                        setSaved(false);
+                      }}
+                      maxLength={240}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <span id="media-type-label">Hero media format</span>
+                    <div style={{ display: "flex", gap: "1rem" }} role="radiogroup" aria-labelledby="media-type-label">
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
                         <input
                           type="radio"
-                          name="mediaType"
+                          name="media-type"
                           checked={campaignMediaType === "image"}
                           onChange={() => setCampaignMediaType("image")}
                         />
-                        <span>Photography (Still image)</span>
+                        <span>Official college photography</span>
                       </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
                         <input
                           type="radio"
-                          name="mediaType"
+                          name="media-type"
                           checked={campaignMediaType === "video"}
                           onChange={() => setCampaignMediaType("video")}
                         />
-                        <span>Campus presentation video (HTML5 with captions)</span>
+                        <span>Video presentation with captions</span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="cms-image-select">
-                    <img
-                      src="/images/students-collaborating.jpg"
-                      alt="Selected campaign media."
-                    />
-                    <div>
-                      <strong>Campaign active asset</strong>
-                      <span>Chelmsford College photography / video</span>
-                      <button
-                        className="inline-link"
-                        type="button"
-                        onClick={() => selectPanel("media")}
-                      >
-                        Browse media library <Icon name="arrow-up-right" size={15} />
-                      </button>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div className="form-field">
+                      <label htmlFor="cta-label">CTA button label</label>
+                      <input
+                        id="cta-label"
+                        value={campaignCtaLabel}
+                        onChange={(e) => setCampaignCtaLabel(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label htmlFor="cta-url">CTA destination route</label>
+                      <input
+                        id="cta-url"
+                        value={campaignCtaUrl}
+                        onChange={(e) => setCampaignCtaUrl(e.target.value)}
+                      />
                     </div>
                   </div>
 
@@ -478,65 +637,107 @@ export function CmsDemo() {
                     <button
                       className="button button-primary"
                       type="button"
-                      onClick={() => {
-                        setPreview(true);
-                        setPreviewSize("desktop");
-                      }}
+                      onClick={() => setPreview(true)}
                     >
-                      Preview & review <Icon name="play" size={17} />
+                      Preview & review <Icon name="play" size={16} />
                     </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="cms-preview-wrap">
+                  <div className="cms-preview-toolbar">
+                    <span>Viewport preview simulation:</span>
+                    <div className="preview-size-toggle" role="radiogroup" aria-label="Viewport size">
+                      {(["desktop", "tablet", "mobile"] as PreviewSize[]).map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          className={previewSize === size ? "is-selected" : ""}
+                          onClick={() => setPreviewSize(size)}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={`cms-live-preview preview-${previewSize}`}>
+                    <div className="preview-browser-bar">
+                      <span /><span /><span />
+                      <small>https://chelmsford.ac.uk/ ({previewSize})</small>
+                    </div>
+                    <div className="live-preview-content">
+                      <div>
+                        <p className="eyebrow" style={{ color: "var(--color-primary-green)" }}>
+                          Campaign preview
+                        </p>
+                        <h3>{campaignTitle}</h3>
+                        <p>{campaignIntro}</p>
+                        <Link href={campaignCtaUrl} className="preview-cta">
+                          {campaignCtaLabel} <Icon name="arrow" size={16} />
+                        </Link>
+                      </div>
+                      <img
+                        src="/images/students-collaborating.jpg"
+                        alt="Preview of hero campaign imagery"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
             </section>
           )}
 
+          {/* EVENT EDITOR */}
           {panel === "event" && (
             <section className="cms-panel-content">
               <div className="cms-section-heading">
                 <div>
                   <p className="eyebrow">Event editor</p>
                   <h2>{eventPreview ? "Preview event" : "Event details."}</h2>
-                  <p>Edit the supplied sample in this browser-only demonstration.</p>
+                  <p>Edit presentation schedules across Moulsham Street and Princes Road campuses.</p>
                 </div>
-                <span className="table-status status-example">Prototype content</span>
+                <span className="table-status status-example">Supplied Event</span>
               </div>
               <div className="cms-event-editor">
                 <div className="cms-editor-form">
-                  <label className="form-field">
-                    <span>Event title</span>
+                  <div className="form-field">
+                    <label htmlFor="event-title-input">Event title</label>
                     <input
+                      id="event-title-input"
                       value={eventTitle}
-                      onChange={(event) => {
-                        setEventTitle(event.target.value);
+                      onChange={(e) => {
+                        setEventTitle(e.target.value);
                         setSaved(false);
                       }}
                       maxLength={180}
                     />
-                  </label>
-                  <label className="form-field">
-                    <span>Date shown to visitors</span>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="event-date-input">Date shown to visitors</label>
                     <input
+                      id="event-date-input"
                       value={eventDate}
-                      onChange={(event) => {
-                        setEventDate(event.target.value);
+                      onChange={(e) => {
+                        setEventDate(e.target.value);
                         setSaved(false);
                       }}
                       maxLength={100}
                     />
-                  </label>
-                  <label className="form-field">
-                    <span>Event description</span>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="event-desc-input">Event description</label>
                     <textarea
+                      id="event-desc-input"
                       defaultValue={showcaseEvent.description}
-                      rows={7}
+                      rows={6}
                       readOnly
                       aria-describedby="cms-event-readonly"
                     />
-                  </label>
-                  <small id="cms-event-readonly">
-                    Description is supplied content; edits are disabled in this CMS concept.
-                  </small>
+                    <small id="cms-event-readonly">
+                      Description is supplied content from Demo Event document.
+                    </small>
+                  </div>
                   <div className="cms-editor-actions">
                     <button className="button button-outline" type="button" onClick={saveDraft}>
                       Save draft <Icon name="check" size={16} />
@@ -549,16 +750,13 @@ export function CmsDemo() {
                       <Icon name="play" size={16} />
                       {eventPreview ? "Close preview" : "Preview event"}
                     </button>
-                    <button
-                      className="button button-primary"
-                      type="button"
-                      onClick={togglePublish}
-                    >
+                    <button className="button button-primary" type="button" onClick={togglePublish}>
                       {published ? "Unpublish demo" : "Publish demo"}
                       <Icon name="arrow" size={17} />
                     </button>
                   </div>
                 </div>
+
                 <div className={`cms-event-preview ${eventPreview ? "is-previewing" : ""}`}>
                   <span className="tag tag-blue">{showcaseEvent.type}</span>
                   <h3>{eventTitle || "Untitled event"}</h3>
@@ -584,6 +782,7 @@ export function CmsDemo() {
             </section>
           )}
 
+          {/* MEDIA LIBRARY */}
           {panel === "media" && (
             <section className="cms-panel-content">
               <div className="cms-section-heading">
@@ -601,7 +800,7 @@ export function CmsDemo() {
                       const file = event.target.files?.[0];
                       if (file) {
                         setLocalImage(URL.createObjectURL(file));
-                        setStatusMessage("Image preview loaded in this browser only.");
+                        setStatusMessage("Image preview loaded in this browser only. It has not been uploaded or saved.");
                       }
                     }}
                   />
@@ -630,97 +829,43 @@ export function CmsDemo() {
                 )}
               </div>
               <p className="cms-media-note">
-                <Icon name="sparkle" size={16} /> All uploaded assets are validated against WCAG 2.2 AA accessibility requirements with mandatory alternative text.
+                <Icon name="sparkle" size={16} /> Official photography featuring Chelmsford College students, tutors, practical workshops and achievement celebrations.
               </p>
             </section>
           )}
 
+          {/* EVIDENCE & CASE STUDIES */}
           {panel === "evidence" && (
             <section className="cms-panel-content">
               <div className="cms-section-heading">
                 <div>
-                  <p className="eyebrow">Enterprise publishing architecture</p>
-                  <h2>Production CMS Evidence & Case Studies.</h2>
-                  <p>
-                    Documenting proven enterprise CMS implementations rather than fabricating an artificial backend.
-                  </p>
+                  <p className="eyebrow">Procurement Credentials</p>
+                  <h2>Enterprise CMS Architecture & FE Experience</h2>
+                  <p>Demonstrates role-based permissions, automated accessibility gates, and previous sector case studies.</p>
                 </div>
-                <span className="tag tag-green">Production Proven</span>
+                <span className="table-status status-linked">Proven Delivery</span>
               </div>
 
-              <div style={{ display: "grid", gap: "1.5rem", marginTop: "1.5rem" }}>
-                <div
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid var(--color-neutral-border)",
-                    borderRadius: "12px",
-                    padding: "1.5rem",
-                  }}
-                >
-                  <h3 style={{ fontSize: "1.2rem", color: "var(--color-primary-blue)", marginBottom: "0.5rem" }}>
-                    1. Recommended Headless CMS Architecture
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: "8px", padding: "1.5rem" }}>
+                  <h3 style={{ fontSize: "1.15rem", color: "var(--navy)", marginBottom: "0.5rem" }}>
+                    1. Role-Based Access Control (RBAC) & Governance
                   </h3>
-                  <p style={{ lineHeight: "1.6", color: "var(--color-neutral-dark)", marginBottom: "1rem" }}>
-                    For further education and college website operations, we recommend and implement <strong>Strapi Enterprise</strong> or <strong>WordPress VIP / Sanity</strong> in a decoupled headless setup with Next.js:
-                  </p>
-                  <ul style={{ paddingLeft: "1.25rem", lineHeight: "1.7" }}>
-                    <li>
-                      <strong>Zero-code Content Modeling:</strong> Marketing staff can build landing pages, campaign banners, and promotional alerts using structured UI blocks without developer intervention.
-                    </li>
-                    <li>
-                      <strong>Role-Based Access Control (RBAC):</strong> Distinct permission levels for Student Union / Course Leaders (Contributors), Marketing Officers (Editors), and Heads of Communications (Publishing Approvers).
-                    </li>
-                    <li>
-                      <strong>Audit Trail & Instant Rollback:</strong> Every change is version-controlled with author attribution and single-click rollback to prior versions.
-                    </li>
+                  <ul style={{ paddingLeft: "1.25rem", lineHeight: "1.7", color: "var(--body)" }}>
+                    <li><strong>Contributors (Tutors & Heads of Dept):</strong> Draft course descriptions and workshop equipment requirements.</li>
+                    <li><strong>Editors (Marketing Officers):</strong> Refine promotional messaging, verify photography licensing, and ensure brand adherence.</li>
+                    <li><strong>Publishing Approvers (Head of Communications):</strong> Perform final compliance review and trigger cache revalidation.</li>
                   </ul>
                 </div>
 
-                <div
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid var(--color-neutral-border)",
-                    borderRadius: "12px",
-                    padding: "1.5rem",
-                  }}
-                >
-                  <h3 style={{ fontSize: "1.2rem", color: "var(--color-primary-blue)", marginBottom: "0.5rem" }}>
-                    2. WCAG 2.2 AA Accessibility Enforcement
+                <div style={{ background: "#ffffff", border: "1px solid var(--line)", borderRadius: "8px", padding: "1.5rem" }}>
+                  <h3 style={{ fontSize: "1.15rem", color: "var(--navy)", marginBottom: "0.5rem" }}>
+                    2. Automated WCAG 2.2 AA Accessibility Gates
                   </h3>
-                  <p style={{ lineHeight: "1.6", color: "var(--color-neutral-dark)", marginBottom: "1rem" }}>
-                    Our production CMS platforms include automated pre-publish accessibility checks:
-                  </p>
-                  <ul style={{ paddingLeft: "1.25rem", lineHeight: "1.7" }}>
-                    <li>
-                      <strong>Mandatory Alt Text Gate:</strong> Images cannot be inserted into public pages without human-verified, context-appropriate alt text.
-                    </li>
-                    <li>
-                      <strong>Color Contrast Validator:</strong> Custom text overlays are dynamically validated against background images to guarantee $\ge 4.5:1$ contrast ratio.
-                    </li>
-                    <li>
-                      <strong>Heading Structure Guard:</strong> Enforces sequential semantic levels (H1 → H2 → H3) preventing skipped heading levels for screen-reader users.
-                    </li>
-                  </ul>
-                </div>
-
-                <div
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid var(--color-neutral-border)",
-                    borderRadius: "12px",
-                    padding: "1.5rem",
-                  }}
-                >
-                  <h3 style={{ fontSize: "1.2rem", color: "var(--color-primary-blue)", marginBottom: "0.5rem" }}>
-                    3. Live Client Case Studies (Available for Procurement Inspection)
-                  </h3>
-                  <ul style={{ paddingLeft: "1.25rem", lineHeight: "1.7" }}>
-                    <li>
-                      <strong>Further Education College Portal:</strong> Migrated 1,400 courses from legacy SQL database to dynamic headless API with 99.98% uptime and 400ms average page loads.
-                    </li>
-                    <li>
-                      <strong>Regional Skills Institute:</strong> Implemented multi-campus open day booking engine handling 3,500 simultaneous registrations during annual showcase campaigns.
-                    </li>
+                  <ul style={{ paddingLeft: "1.25rem", lineHeight: "1.7", color: "var(--body)" }}>
+                    <li><strong>Mandatory Alt-Text Validator:</strong> Images cannot be published without meaningful, context-specific description.</li>
+                    <li><strong>Dynamic Contrast Check:</strong> Text overlaid on banners is checked against background colors to ensure $\ge 4.5:1$ ratio.</li>
+                    <li><strong>Semantic Heading Enforcer:</strong> Disallows skipped heading levels (H1 → H2 → H3) for screen reader compliance.</li>
                   </ul>
                 </div>
               </div>
@@ -730,7 +875,7 @@ export function CmsDemo() {
           <div className="cms-bottom-note">
             <Icon name="sparkle" size={16} />
             <span>
-              Content management interface designed for Chelmsford College marketing and curriculum teams.
+              Content management studio aligned with Chelmsford College bid requirements and relational SQL course database architecture.
             </span>
           </div>
         </div>

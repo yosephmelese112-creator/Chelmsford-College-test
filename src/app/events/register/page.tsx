@@ -1,21 +1,28 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Icon } from "@/components/icon";
-import { EventRegistrationForm } from "@/components/event-registration-form";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { eventBySlug, showcaseEvent } from "@/lib/content";
+import { EventRegistrationForm } from "@/components/event-registration-form";
+import { eventBySlug, collegeEvents } from "@/lib/content";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? "" : value ?? "");
+export const metadata: Metadata = {
+  title: "Book a Place | College Events",
+  description:
+    "Book your free place for Chelmsford College open evenings, discovery mornings and campus tours across Moulsham Street and Princes Road campuses.",
+};
 
 export default async function EventRegistrationPage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<{ event?: string }>;
 }) {
-  const params = await searchParams;
-  const eventSlug = first(params.event) || showcaseEvent.slug;
-  const event = eventBySlug(eventSlug) || showcaseEvent;
+  const { event: eventSlug } = await searchParams;
+  // If no event or if past event, default to next upcoming event
+  const matchedEvent = eventSlug ? eventBySlug(eventSlug) : undefined;
+  const initialEvent = matchedEvent && !matchedEvent.isPastEvent
+    ? matchedEvent
+    : collegeEvents.find((e) => !e.isPastEvent) ?? collegeEvents[0];
 
   return (
     <>
@@ -27,47 +34,24 @@ export default async function EventRegistrationPage({
             <span>/</span>
             <Link href="/events">Events</Link>
             <span>/</span>
-            <span>Book free place</span>
+            <span>Book a place</span>
           </div>
-          <div className="registration-layout">
-            <div className="registration-context">
-              <Link className="back-link" href={`/events/${event.slug}`}>
-                <Icon name="back" size={17} /> Back to event details
-              </Link>
-              <p className="eyebrow">Meet us in person</p>
-              <h1>
-                Book your free <em>place.</em>
-              </h1>
+
+          <header className="form-page-header">
+            <div className="form-header-copy">
+              <span className="eyebrow"><i className="eyebrow-dot" /> Event booking</span>
+              <h1>Book a place</h1>
               <p>
-                Complete your details below to reserve your entry to the {event.title}. Bring family or friends along.
+                Reserve your arrival time and presentation slots for college open events. Bookings are completely free and you are welcome to bring family or guests.
               </p>
-              <div className="registration-event-summary">
-                <span className="summary-icon">
-                  <Icon name="calendar" size={20} />
-                </span>
-                <div>
-                  <strong>{event.title}</strong>
-                  <span>{event.dateLabel}</span>
-                  <span>
-                    {event.time} · {event.location}
-                  </span>
-                </div>
-              </div>
-              <div className="registration-trust">
-                <Icon name="check-circle" size={19} />
-                <span>
-                  Immediate booking confirmation and arrival guidance will be sent to your email.
-                </span>
-              </div>
             </div>
-            <div className="registration-form-panel">
-              <div className="form-panel-heading">
-                <p className="eyebrow">Attendee details</p>
-                <h2>Reserve your places.</h2>
-              </div>
-              <EventRegistrationForm event={event} />
+            <div className="form-header-assurance">
+              <Icon name="check-circle" size={18} />
+              <span>Free admission · Instant email booking confirmation</span>
             </div>
-          </div>
+          </header>
+
+          <EventRegistrationForm event={initialEvent} />
         </div>
       </main>
       <SiteFooter />

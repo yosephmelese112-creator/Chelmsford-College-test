@@ -6,47 +6,35 @@ import { Icon } from "@/components/icon";
 
 type PaymentCategory = "deposit" | "materials" | "trip";
 type PayerType = "student" | "parent";
+type DepositRefType = "studentNumber" | "appReference";
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type PaymentOutcome = "success" | "declined" | "cancelled";
 
-interface CategoryInfo {
-  id: PaymentCategory;
-  title: string;
-  timing: string;
-  amount: string;
-  amountNumber: number;
-  description: string;
-  badge: string;
+interface MaterialFeeOption {
+  courseTitle: string;
+  amount: number;
+  label: string;
 }
 
-const categories: CategoryInfo[] = [
-  {
-    id: "deposit",
-    title: "Course deposit",
-    timing: "Before enrolment",
-    amount: "£150.00",
-    amountNumber: 150.0,
-    description: "Secures your place on your chosen qualification prior to formal enrolment.",
-    badge: "Before you start",
-  },
-  {
-    id: "materials",
-    title: "Materials fee",
-    timing: "After enrolment",
-    amount: "£85.00",
-    amountNumber: 85.0,
-    description: "For specialist workshop tools, studio kits and digital licenses for your enrolled study.",
-    badge: "While you study",
-  },
-  {
-    id: "trip",
-    title: "Trips & one-off payments",
-    timing: "One-off payment",
-    amount: "£45.00",
-    amountNumber: 45.0,
-    description: "For educational excursions, industry visits, guest masterclasses and exam resits.",
-    badge: "One-off",
-  },
+interface TripFeeOption {
+  tripTitle: string;
+  amount: number;
+  label: string;
+}
+
+const materialFeeOptions: MaterialFeeOption[] = [
+  { courseTitle: "Creative Industries, Art & Fashion", amount: 80.0, label: "£80.00 — Art, Fashion & Media materials fee" },
+  { courseTitle: "Graphic Design (UAL Level 3)", amount: 75.0, label: "£75.00 — Graphic Design studio & Mac suite fee" },
+  { courseTitle: "Hairdressing & Beauty Therapy", amount: 85.0, label: "£85.00 — The Hub commercial salon uniform & kit" },
+  { courseTitle: "Performing & Production Arts", amount: 175.0, label: "£175.00 — Technical production materials & 3 theatre trips" },
+  { courseTitle: "Construction, Plumbing & Carpentry", amount: 35.0, label: "£35.00 — Workshop PPE, polo shirts & safety gear" },
+];
+
+const tripFeeOptions: TripFeeOption[] = [
+  { tripTitle: "Gateway Level 2 Digital & IT Skills Trip", amount: 50.0, label: "£50.00 — Digital industry visit & exhibition" },
+  { tripTitle: "BTEC Level 3 IT Educational Excursion", amount: 100.0, label: "£100.00 — National Computing Museum & technology trip" },
+  { tripTitle: "T Level Legal Services & Business Enrichment", amount: 25.0, label: "£25.00 — Law courts visit & guest masterclass" },
+  { tripTitle: "Uniformed Services Field Expedition", amount: 45.0, label: "£45.00 — Outdoor expedition & fitness residential" },
 ];
 
 const steps = ["Choose payment", "Who’s paying?", "Reference", "Review", "Secure handoff", "Confirmation"];
@@ -56,6 +44,10 @@ export function PaymentWizard() {
   const [category, setCategory] = useState<PaymentCategory>("deposit");
   const [payer, setPayer] = useState<PayerType>("student");
 
+  // Specific amount selections for Materials and Trips from course dataset
+  const [selectedMaterialIndex, setSelectedMaterialIndex] = useState(0);
+  const [selectedTripIndex, setSelectedTripIndex] = useState(0);
+
   // Payer details form
   const [studentName, setStudentName] = useState("");
   const [payerName, setPayerName] = useState("");
@@ -64,8 +56,13 @@ export function PaymentWizard() {
   const [relationship, setRelationship] = useState("Parent");
   const [payerError, setPayerError] = useState("");
 
-  // Reference lookup
-  const [reference, setReference] = useState("");
+  // Deposit-specific reference identification (Section 8.B)
+  const [depositRefType, setDepositRefType] = useState<DepositRefType>("studentNumber");
+  const [studentNumber, setStudentNumber] = useState("");
+  const [appReference, setAppReference] = useState("");
+
+  // General reference for Materials & Trips
+  const [generalReference, setGeneralReference] = useState("");
   const [referenceError, setReferenceError] = useState("");
 
   // Review & confirmation
@@ -73,8 +70,46 @@ export function PaymentWizard() {
   const [simulatedOutcome, setSimulatedOutcome] = useState<PaymentOutcome>("success");
   const [transactionId, setTransactionId] = useState("");
 
-  const selectedCategory = categories.find((item) => item.id === category) ?? categories[0];
-  const payerLabel = payer === "student" ? "Student" : `Parent or carer (${relationship})`;
+  // Determine current active amount and description
+  const depositAmount = 150.0;
+  const currentMaterial = materialFeeOptions[selectedMaterialIndex];
+  const currentTrip = tripFeeOptions[selectedTripIndex];
+
+  const currentAmount =
+    category === "deposit"
+      ? depositAmount
+      : category === "materials"
+      ? currentMaterial.amount
+      : currentTrip.amount;
+
+  const currentAmountFormatted = `£${currentAmount.toFixed(2)}`;
+  const currentTitle =
+    category === "deposit"
+      ? "Course deposit"
+      : category === "materials"
+      ? "Materials fee"
+      : "Trips & one-off payments";
+
+  const currentTiming =
+    category === "deposit"
+      ? "Before enrolment"
+      : category === "materials"
+      ? "After enrolment"
+      : "One-off payment";
+
+  const currentDescription =
+    category === "deposit"
+      ? "Secures your place on your chosen qualification prior to formal enrolment."
+      : category === "materials"
+      ? currentMaterial.label
+      : currentTrip.label;
+
+  const resolvedReference =
+    category === "deposit"
+      ? depositRefType === "studentNumber"
+        ? studentNumber.trim()
+        : appReference.trim()
+      : generalReference.trim();
 
   function handlePayerSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -111,14 +146,38 @@ export function PaymentWizard() {
     e.preventDefault();
     setReferenceError("");
 
-    const trimmed = reference.trim();
-    if (!trimmed) {
-      setReferenceError("Enter the payment or student reference supplied by the college.");
-      return;
-    }
-    if (trimmed.length < 5) {
-      setReferenceError("References are typically formatted like CC104829 or 6-digit student ID.");
-      return;
+    if (category === "deposit") {
+      if (depositRefType === "studentNumber") {
+        const num = studentNumber.trim();
+        if (!num) {
+          setReferenceError("Please enter the student ID number found on your college letter or email.");
+          return;
+        }
+        if (!/^\d{6,8}$/.test(num)) {
+          setReferenceError("Student ID numbers must be 6 to 8 digits (for example: 20268492).");
+          return;
+        }
+      } else {
+        const appRef = appReference.trim();
+        if (!appRef) {
+          setReferenceError("Please enter your Application Reference from your admissions confirmation.");
+          return;
+        }
+        if (appRef.length < 5) {
+          setReferenceError("Application references are formatted like APP-2026-9812 or CC104829.");
+          return;
+        }
+      }
+    } else {
+      const trimmed = generalReference.trim();
+      if (!trimmed) {
+        setReferenceError("Please enter your student ID or course payment reference.");
+        return;
+      }
+      if (trimmed.length < 4) {
+        setReferenceError("References are typically 6-8 digits (student ID) or formatted like CC104829.");
+        return;
+      }
     }
 
     setStep(4);
@@ -141,7 +200,13 @@ export function PaymentWizard() {
 
   return (
     <div className="payment-wizard">
-      <div className="payment-progress" aria-label={`Payment step ${step} of 6`}>
+      {/* Mobile keyboard-scrollable step progress indicator (Section 9.D) */}
+      <div
+        className="payment-progress"
+        tabIndex={0}
+        role="region"
+        aria-label={`Payment steps progress, step ${step} of 6. Use left and right arrow keys to scroll steps on smaller screens.`}
+      >
         {steps.map((label, index) => (
           <div
             className={`progress-step ${
@@ -157,81 +222,211 @@ export function PaymentWizard() {
         ))}
       </div>
 
-      {/* STAGE 1: CATEGORY SELECTION */}
+      {/* STAGE 1: CATEGORY & AMOUNT SELECTION */}
       {step === 1 && (
         <div className="payment-step-layout">
           <section className="payment-step-main">
             <p className="eyebrow">Payment category</p>
             <h2>What would you like to pay?</h2>
             <p className="payment-step-intro">
-              Select the payment category indicated on your college letter or email communication.
+              Select the category indicated on your college letter or payment email. Amounts for materials and trips reflect actual fees from the course catalogue.
             </p>
 
             <div className="payment-category-list" role="radiogroup" aria-label="Choose a payment category">
-              {categories.map((item) => (
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={category === item.id}
-                  className={`payment-category-option ${category === item.id ? "is-selected" : ""}`}
-                  key={item.id}
-                  onClick={() => setCategory(item.id)}
-                >
-                  <span className="payment-category-radio">{category === item.id && <i />}</span>
-                  <span className="payment-category-copy">
-                    <strong>{item.title}</strong>
-                    <span>{item.description}</span>
+              {/* Option 1: Course Deposit */}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={category === "deposit"}
+                className={`payment-category-option ${category === "deposit" ? "is-selected" : ""}`}
+                onClick={() => setCategory("deposit")}
+              >
+                <span className="payment-category-radio">{category === "deposit" && <i />}</span>
+                <div className="payment-category-info">
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                    <strong>Course deposit</strong>
+                    <span className="tag tag-neutral" style={{ fontSize: "0.75rem", fontWeight: 700 }}>
+                      Illustrative amount
+                    </span>
+                  </div>
+                  <small>Secures your place on your chosen qualification prior to formal enrolment.</small>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--color-neutral-muted)" }}>
+                    * College has not supplied a fixed deposit fee; £150.00 is displayed as an illustrative example.
+                  </p>
+                </div>
+                <div className="payment-category-amount" style={{ textAlign: "right" }}>
+                  <strong>£150.00</strong>
+                  <small>Illustrative</small>
+                </div>
+              </button>
+
+              {/* Option 2: Materials Fee */}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={category === "materials"}
+                className={`payment-category-option ${category === "materials" ? "is-selected" : ""}`}
+                onClick={() => setCategory("materials")}
+              >
+                <span className="payment-category-radio">{category === "materials" && <i />}</span>
+                <div className="payment-category-info">
+                  <strong>Materials fee</strong>
+                  <small>For specialist workshop tools, salon kits, Mac suites, and protective wear.</small>
+                  <span className="tag tag-blue" style={{ fontSize: "0.75rem", fontWeight: 700, marginTop: "4px" }}>
+                    Actual course fee: {currentMaterial.amount > 0 ? `£${currentMaterial.amount.toFixed(2)}` : "Course specific"}
                   </span>
-                  <span className="payment-category-timing">
-                    {item.badge}
-                    <small>{item.timing}</small>
-                    <strong style={{ display: "block", marginTop: "0.25rem", color: "var(--color-primary-blue)" }}>
-                      {item.amount}
-                    </strong>
+                </div>
+                <div className="payment-category-amount" style={{ textAlign: "right" }}>
+                  <strong>£{currentMaterial.amount.toFixed(2)}</strong>
+                  <small>From syllabus</small>
+                </div>
+              </button>
+
+              {/* Option 3: Trips & One-Off */}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={category === "trip"}
+                className={`payment-category-option ${category === "trip" ? "is-selected" : ""}`}
+                onClick={() => setCategory("trip")}
+              >
+                <span className="payment-category-radio">{category === "trip" && <i />}</span>
+                <div className="payment-category-info">
+                  <strong>Trips & one-off payments</strong>
+                  <small>For educational excursions, industry visits, residentials, and theatre trips.</small>
+                  <span className="tag tag-green" style={{ fontSize: "0.75rem", fontWeight: 700, marginTop: "4px" }}>
+                    Actual trip fee: £{currentTrip.amount.toFixed(2)}
                   </span>
-                  <Icon name="arrow-up-right" size={18} />
-                </button>
-              ))}
+                </div>
+                <div className="payment-category-amount" style={{ textAlign: "right" }}>
+                  <strong>£{currentTrip.amount.toFixed(2)}</strong>
+                  <small>From syllabus</small>
+                </div>
+              </button>
             </div>
 
-            <button className="button button-primary" type="button" onClick={() => setStep(2)}>
-              Continue <Icon name="arrow" size={18} />
-            </button>
+            {/* If Materials Fee selected: pick syllabus course item */}
+            {category === "materials" && (
+              <div
+                style={{
+                  marginTop: "1.5rem",
+                  padding: "1.25rem",
+                  background: "var(--surface)",
+                  borderRadius: "8px",
+                  border: "1px solid var(--line)",
+                }}
+              >
+                <label htmlFor="material-select" style={{ display: "block", fontWeight: 700, marginBottom: "0.5rem", color: "var(--navy)" }}>
+                  Select your course materials fee:
+                </label>
+                <select
+                  id="material-select"
+                  value={selectedMaterialIndex}
+                  onChange={(e) => setSelectedMaterialIndex(Number(e.target.value))}
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    padding: "0 0.85rem",
+                    borderRadius: "6px",
+                    border: "1px solid var(--line)",
+                    background: "#ffffff",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {materialFeeOptions.map((opt, idx) => (
+                    <option key={idx} value={idx}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* If Trip selected: pick syllabus trip item */}
+            {category === "trip" && (
+              <div
+                style={{
+                  marginTop: "1.5rem",
+                  padding: "1.25rem",
+                  background: "var(--surface)",
+                  borderRadius: "8px",
+                  border: "1px solid var(--line)",
+                }}
+              >
+                <label htmlFor="trip-select" style={{ display: "block", fontWeight: 700, marginBottom: "0.5rem", color: "var(--navy)" }}>
+                  Select your educational excursion or trip:
+                </label>
+                <select
+                  id="trip-select"
+                  value={selectedTripIndex}
+                  onChange={(e) => setSelectedTripIndex(Number(e.target.value))}
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    padding: "0 0.85rem",
+                    borderRadius: "6px",
+                    border: "1px solid var(--line)",
+                    background: "#ffffff",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {tripFeeOptions.map((opt, idx) => (
+                    <option key={idx} value={idx}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div style={{ marginTop: "1.75rem" }}>
+              <button
+                className="button button-primary"
+                type="button"
+                onClick={() => setStep(2)}
+              >
+                Continue to payer details <Icon name="arrow" size={18} />
+              </button>
+            </div>
           </section>
 
-          <aside className="payment-help-panel">
-            <span className="help-panel-icon">
-              <Icon name="lock" size={20} />
-            </span>
-            <p className="eyebrow">Payment guidance</p>
-            <h3>Have your reference ready</h3>
-            <p>
-              Your college reference is required in step 3. Standard course deposits are £150.00, materials fees are £85.00, and educational trips are £45.00.
-            </p>
-            <Link href="/events">
-              Need finance advice? <Icon name="arrow-up-right" size={15} />
-            </Link>
+          <aside className="payment-help-panel payment-summary-aside">
+            <p className="eyebrow">Payment overview</p>
+            <h3>{currentTitle}</h3>
+            <p>{currentTiming}</p>
+            <div className="summary-divider" />
+            <p className="summary-small-label">Selected Amount</p>
+            <strong style={{ fontSize: "1.5rem", color: "var(--color-primary-blue)", display: "block", marginBottom: "0.5rem" }}>
+              {currentAmountFormatted}
+            </strong>
+            {category === "deposit" && (
+              <small style={{ display: "block", color: "var(--color-neutral-muted)", marginBottom: "0.75rem" }}>
+                * Illustrative amount for prototype demonstration.
+              </small>
+            )}
+            <p className="summary-small-label">Description</p>
+            <p style={{ fontSize: "0.88rem", color: "var(--body)" }}>{currentDescription}</p>
           </aside>
         </div>
       )}
 
-      {/* STAGE 2: PAYER DETAILS */}
+      {/* STAGE 2: WHO IS PAYING? (STUDENT VS PARENT/CARER) */}
       {step === 2 && (
         <div className="payment-step-layout">
           <section className="payment-step-main">
             <button type="button" className="back-link payment-back" onClick={back}>
-              <Icon name="back" size={17} /> Back
+              <Icon name="back" size={17} /> Change payment type
             </button>
             <p className="eyebrow">Payer details</p>
             <h2>Who is making this payment?</h2>
             <p className="payment-step-intro">
-              Payments can be completed by the student directly or by a parent, carer or guardian on their behalf.
+              Parents, carers, and legal guardians can pay securely on behalf of enrolled students.
             </p>
 
-            <div className="payer-choice-list" role="radiogroup" aria-label="Who is paying?">
+            <div className="payer-choice-list" role="radiogroup" aria-label="Who is making this payment?">
               {[
-                { id: "student" as const, title: "I am a student", body: "I’m paying for my own college course or trip." },
-                { id: "parent" as const, title: "I am a parent or carer", body: "I’m paying on behalf of a student." },
+                { id: "student" as const, title: "I am a student", body: "I am paying for my own college course, materials, or trip." },
+                { id: "parent" as const, title: "I am a parent or carer", body: "I am paying on behalf of an enrolled student." },
               ].map((item) => (
                 <button
                   className={`payer-choice ${payer === item.id ? "is-selected" : ""}`}
@@ -262,10 +457,11 @@ export function PaymentWizard() {
                       onChange={(e) => setStudentName(e.target.value)}
                       placeholder="Your first and last name"
                       required
+                      aria-required="true"
                     />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="student-payer-email">Receipt email address *</label>
+                    <label htmlFor="student-payer-email">Email address for receipt delivery *</label>
                     <input
                       id="student-payer-email"
                       type="email"
@@ -273,16 +469,19 @@ export function PaymentWizard() {
                       onChange={(e) => setPayerEmail(e.target.value)}
                       placeholder="you@example.com"
                       required
+                      aria-required="true"
                     />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="student-payer-phone">Telephone number <span className="optional-label">Optional</span></label>
+                    <label htmlFor="student-payer-phone">
+                      Telephone number <span className="optional-label">Optional</span>
+                    </label>
                     <input
                       id="student-payer-phone"
                       type="tel"
                       value={payerPhone}
                       onChange={(e) => setPayerPhone(e.target.value)}
-                      placeholder="Mobile or home number"
+                      placeholder="Mobile number"
                     />
                   </div>
                 </>
@@ -294,18 +493,9 @@ export function PaymentWizard() {
                       id="parent-name"
                       value={payerName}
                       onChange={(e) => setPayerName(e.target.value)}
-                      placeholder="Your name"
+                      placeholder="Your first and last name"
                       required
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label htmlFor="student-name">Student full name *</label>
-                    <input
-                      id="student-name"
-                      value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
-                      placeholder="Name of student enrolled"
-                      required
+                      aria-required="true"
                     />
                   </div>
                   <div className="form-field">
@@ -318,19 +508,30 @@ export function PaymentWizard() {
                         width: "100%",
                         height: "46px",
                         padding: "0 0.85rem",
-                        borderRadius: "8px",
-                        border: "1px solid var(--color-neutral-border)",
+                        borderRadius: "6px",
+                        border: "1px solid var(--line)",
                         background: "#ffffff",
                       }}
                     >
                       <option value="Parent">Parent</option>
                       <option value="Legal Guardian">Legal Guardian</option>
                       <option value="Carer">Carer</option>
-                      <option value="Other Relative">Other Relative</option>
+                      <option value="Other Family Member">Other Family Member</option>
                     </select>
                   </div>
                   <div className="form-field">
-                    <label htmlFor="parent-email">Parent / Carer email address *</label>
+                    <label htmlFor="student-enrolled-name">Student full name (enrolled) *</label>
+                    <input
+                      id="student-enrolled-name"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      placeholder="Student's first and last name"
+                      required
+                      aria-required="true"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="parent-email">Parent / Carer email address (for card receipt) *</label>
                     <input
                       id="parent-email"
                       type="email"
@@ -338,6 +539,7 @@ export function PaymentWizard() {
                       onChange={(e) => setPayerEmail(e.target.value)}
                       placeholder="parent@example.com"
                       required
+                      aria-required="true"
                     />
                   </div>
                 </>
@@ -357,78 +559,199 @@ export function PaymentWizard() {
 
           <aside className="payment-help-panel payment-summary-aside">
             <p className="eyebrow">Your selection</p>
-            <h3>{selectedCategory.title}</h3>
-            <p>{selectedCategory.timing}</p>
+            <h3>{currentTitle}</h3>
+            <p>{currentTiming}</p>
             <div className="summary-divider" />
             <p className="summary-small-label">Amount</p>
             <strong style={{ fontSize: "1.4rem", color: "var(--color-primary-blue)", display: "block", marginBottom: "0.5rem" }}>
-              {selectedCategory.amount}
+              {currentAmountFormatted}
             </strong>
             <p className="summary-small-label">Payer context</p>
-            <strong>{payer === "student" ? "Enrolled Student" : "Parent / Carer"}</strong>
+            <strong>{payer === "student" ? "Enrolled Student" : `Parent / Carer (${relationship})`}</strong>
           </aside>
         </div>
       )}
 
-      {/* STAGE 3: REFERENCE LOOKUP */}
+      {/* STAGE 3: REFERENCE IDENTIFICATION (SPECIFIC STUDENT ID OR APPLICATION REF) */}
       {step === 3 && (
         <div className="payment-step-layout">
           <section className="payment-step-main">
             <button type="button" className="back-link payment-back" onClick={back}>
-              <Icon name="back" size={17} /> Back
+              <Icon name="back" size={17} /> Edit payer details
             </button>
-            <p className="eyebrow">Reference lookup</p>
-            <h2>Enter your college reference.</h2>
+            <p className="eyebrow">Reference identification</p>
+            <h2>
+              {category === "deposit"
+                ? "Enter student number or application reference."
+                : "Enter college student reference."}
+            </h2>
             <p className="payment-step-intro">
-              Enter the student ID or payment reference found on your college letter or payment email.
+              {category === "deposit"
+                ? "To allocate your course deposit correctly, provide either your college Student ID Number (from your offer email) or your admissions Application Reference."
+                : "Enter the Student ID Number found on your college ID card, enrolment confirmation, or fee invoice."}
             </p>
 
             <form className="reference-form" onSubmit={handleReferenceSubmit} noValidate>
-              <label className="form-field" htmlFor="payment-reference">
-                <span>College or student reference *</span>
-                <input
-                  id="payment-reference"
-                  value={reference}
-                  onChange={(event) => {
-                    setReference(event.target.value);
-                    setReferenceError("");
-                  }}
-                  autoComplete="off"
-                  maxLength={120}
-                  placeholder="e.g. CC104829 or 6-digit student ID"
-                  aria-describedby={referenceError ? "reference-error" : "reference-help"}
-                  aria-invalid={Boolean(referenceError)}
-                />
-              </label>
+              {category === "deposit" ? (
+                <>
+                  {/* Radio Choice between Student Number & Application Reference */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "0.75rem",
+                      marginBottom: "1.25rem",
+                    }}
+                    role="radiogroup"
+                    aria-label="Choose identification type"
+                  >
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={depositRefType === "studentNumber"}
+                      className={`payer-choice ${depositRefType === "studentNumber" ? "is-selected" : ""}`}
+                      onClick={() => {
+                        setDepositRefType("studentNumber");
+                        setReferenceError("");
+                      }}
+                      style={{ padding: "0.85rem 1rem" }}
+                    >
+                      <span className="payment-category-radio">{depositRefType === "studentNumber" && <i />}</span>
+                      <span>
+                        <strong>Student Number</strong>
+                        <small>6 to 8 digit college ID</small>
+                      </span>
+                    </button>
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1.25rem" }}>
-                <small id="reference-help" className="form-helper" style={{ margin: 0 }}>
-                  Format: CC followed by 6 digits (e.g. CC104829)
-                </small>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReference("CC104829");
-                    setReferenceError("");
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--color-primary-blue)",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                  }}
-                >
-                  Use sample ref CC104829
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={depositRefType === "appReference"}
+                      className={`payer-choice ${depositRefType === "appReference" ? "is-selected" : ""}`}
+                      onClick={() => {
+                        setDepositRefType("appReference");
+                        setReferenceError("");
+                      }}
+                      style={{ padding: "0.85rem 1rem" }}
+                    >
+                      <span className="payment-category-radio">{depositRefType === "appReference" && <i />}</span>
+                      <span>
+                        <strong>Application Reference</strong>
+                        <small>e.g. APP-2026-9812</small>
+                      </span>
+                    </button>
+                  </div>
+
+                  {depositRefType === "studentNumber" ? (
+                    <div className="form-field">
+                      <label htmlFor="student-number-input">College Student Number (6 to 8 digits) *</label>
+                      <input
+                        id="student-number-input"
+                        value={studentNumber}
+                        onChange={(e) => {
+                          setStudentNumber(e.target.value.replace(/\D/g, ""));
+                          setReferenceError("");
+                        }}
+                        maxLength={8}
+                        placeholder="e.g. 20268492"
+                        autoComplete="off"
+                        aria-describedby="student-number-help"
+                      />
+                      <small id="student-number-help" className="form-helper">
+                        Format: numeric only, 6 to 8 digits (printed on your admissions letter).
+                      </small>
+                    </div>
+                  ) : (
+                    <div className="form-field">
+                      <label htmlFor="app-ref-input">Application Reference Code *</label>
+                      <input
+                        id="app-ref-input"
+                        value={appReference}
+                        onChange={(e) => {
+                          setAppReference(e.target.value.toUpperCase());
+                          setReferenceError("");
+                        }}
+                        maxLength={24}
+                        placeholder="e.g. APP-2026-9812"
+                        autoComplete="off"
+                        aria-describedby="app-ref-help"
+                      />
+                      <small id="app-ref-help" className="form-helper">
+                        Format: issued upon online application submission (e.g. APP-2026-XXXX or CC-XXXXXX).
+                      </small>
+                    </div>
+                  )}
+
+                  <div style={{ margin: "0.75rem 0 1.25rem" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (depositRefType === "studentNumber") {
+                          setStudentNumber("20268492");
+                        } else {
+                          setAppReference("APP-2026-9812");
+                        }
+                        setReferenceError("");
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--color-primary-blue)",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Fill sample {depositRefType === "studentNumber" ? "Student ID (20268492)" : "Application Ref (APP-2026-9812)"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="form-field">
+                    <label htmlFor="general-reference-input">Student ID or Payment Reference *</label>
+                    <input
+                      id="general-reference-input"
+                      value={generalReference}
+                      onChange={(e) => {
+                        setGeneralReference(e.target.value);
+                        setReferenceError("");
+                      }}
+                      maxLength={32}
+                      placeholder="e.g. 20268492 or CC-MAT-401"
+                      autoComplete="off"
+                    />
+                    <small className="form-helper">
+                      Printed on your course kit letter or provided by your department tutor.
+                    </small>
+                  </div>
+                  <div style={{ margin: "0.75rem 0 1.25rem" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGeneralReference("20268492");
+                        setReferenceError("");
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--color-primary-blue)",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Fill sample Student ID (20268492)
+                    </button>
+                  </div>
+                </>
+              )}
 
               {referenceError && (
-                <p className="form-error" id="reference-error" role="alert">
-                  <Icon name="close" size={16} />
-                  {referenceError}
+                <p className="form-error" role="alert" style={{ marginBottom: "1rem" }}>
+                  <Icon name="close" size={16} /> {referenceError}
                 </p>
               )}
 
@@ -441,14 +764,16 @@ export function PaymentWizard() {
           <aside className="payment-help-panel payment-summary-aside">
             <p className="eyebrow">Step 3 of 6</p>
             <h3>Where is my reference?</h3>
-            <p>
-              Look on the top right corner of your college offer letter or your enrolment confirmation email.
+            <p style={{ fontSize: "0.88rem", lineHeight: "1.55" }}>
+              {category === "deposit"
+                ? "Your Student ID (6–8 digits) is located at the top right of your Chelmsford College offer letter. If you applied recently and do not have a student ID yet, use the Application Reference from your confirmation email."
+                : "Check your enrolment confirmation letter or department kit list. For assistance, contact the Finance Office on 01245 29 30 31."}
             </p>
           </aside>
         </div>
       )}
 
-      {/* STAGE 4: PAYMENT REVIEW */}
+      {/* STAGE 4: PAYMENT REVIEW & VALIDATION */}
       {step === 4 && (
         <div className="payment-step-layout">
           <section className="payment-step-main">
@@ -457,405 +782,346 @@ export function PaymentWizard() {
             </button>
             <p className="eyebrow">Check before you continue</p>
             <h2>Review your payment.</h2>
+            <p className="payment-step-intro">
+              Verify your payment details before handing off to the secure college payment portal.
+            </p>
 
-            <div className="payment-review-card">
-              <div className="review-card-heading">
-                <span>Itemised summary</span>
+            <div
+              style={{
+                border: "1px solid var(--line)",
+                borderRadius: "8px",
+                overflow: "hidden",
+                background: "#ffffff",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <div style={{ padding: "1.25rem", borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+                <span className="eyebrow" style={{ fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                  Payment summary
+                </span>
+                <h3 style={{ margin: 0, color: "var(--navy)", fontSize: "1.25rem" }}>
+                  {currentTitle}
+                </h3>
               </div>
-              <dl>
-                <div>
-                  <dt>Payment category</dt>
-                  <dd>
-                    <strong>{selectedCategory.title}</strong>
-                    <button type="button" onClick={() => setStep(1)} style={{ marginLeft: "0.5rem", border: "none", background: "none", color: "var(--color-primary-blue)", cursor: "pointer", fontSize: "0.82rem", textDecoration: "underline" }}>
-                      Edit
-                    </button>
-                  </dd>
+
+              <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--line)", paddingBottom: "0.5rem" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Total amount to pay</span>
+                  <strong style={{ fontSize: "1.25rem", color: "var(--color-primary-blue)" }}>
+                    {currentAmountFormatted}
+                  </strong>
                 </div>
-                <div>
-                  <dt>Purpose</dt>
-                  <dd>{selectedCategory.description}</dd>
-                </div>
-                <div>
-                  <dt>Reference</dt>
-                  <dd>
-                    <code>{reference.trim()}</code>
-                    <button type="button" onClick={() => setStep(3)} style={{ marginLeft: "0.5rem", border: "none", background: "none", color: "var(--color-primary-blue)", cursor: "pointer", fontSize: "0.82rem", textDecoration: "underline" }}>
-                      Edit
-                    </button>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Payer</dt>
-                  <dd>{payer === "student" ? studentName : `${payerName} (${relationship})`}</dd>
-                </div>
-                {payer === "parent" && (
-                  <div>
-                    <dt>Student name</dt>
-                    <dd>{studentName}</dd>
+
+                {category === "deposit" && (
+                  <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--line)", paddingBottom: "0.5rem" }}>
+                    <span style={{ color: "var(--color-neutral-muted)" }}>Fee status</span>
+                    <span className="tag tag-neutral" style={{ fontWeight: 700 }}>
+                      Illustrative deposit amount
+                    </span>
                   </div>
                 )}
-                <div>
-                  <dt>Receipt email</dt>
-                  <dd>{payerEmail}</dd>
+
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--line)", paddingBottom: "0.5rem" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Item description</span>
+                  <span style={{ fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>
+                    {currentDescription}
+                  </span>
                 </div>
-                <div>
-                  <dt>Payment timing</dt>
-                  <dd>{selectedCategory.timing}</dd>
+
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--line)", paddingBottom: "0.5rem" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Enrolled student</span>
+                  <strong>{studentName}</strong>
                 </div>
-              </dl>
-              <div className="payment-review-total">
-                <span>Total amount to be charged</span>
-                <strong>{selectedCategory.amount}</strong>
+
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--line)", paddingBottom: "0.5rem" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Payer</span>
+                  <strong>{payer === "student" ? "Self (Student)" : `${payerName} (${relationship})`}</strong>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--line)", paddingBottom: "0.5rem" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>
+                    {category === "deposit"
+                      ? depositRefType === "studentNumber"
+                        ? "Student ID Number"
+                        : "Application Reference"
+                      : "Reference"}
+                  </span>
+                  <code style={{ fontWeight: 700, background: "var(--surface)", padding: "2px 6px", borderRadius: "4px" }}>
+                    {resolvedReference}
+                  </code>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Receipt email</span>
+                  <strong>{payerEmail}</strong>
+                </div>
               </div>
             </div>
 
-            <label className="consent-check payment-confirm-check" style={{ margin: "1.25rem 0" }}>
+            <label className="consent-check" style={{ marginBottom: "1.5rem" }}>
               <input
                 type="checkbox"
                 checked={reviewConfirmed}
-                onChange={(event) => setReviewConfirmed(event.target.checked)}
+                onChange={(e) => setReviewConfirmed(e.target.checked)}
               />
               <span>
-                I have checked these details and confirm they are correct before proceeding to payment.
+                I confirm the student and payment details above are correct and understand this transaction will be processed via the Chelmsford College secure payment service.
               </span>
             </label>
 
-            <div className="payment-review-actions">
-              <button className="button button-outline" type="button" onClick={() => setStep(2)}>
-                <Icon name="back" size={17} /> Edit payer details
-              </button>
-              <button
-                className="button button-primary"
-                type="button"
-                disabled={!reviewConfirmed}
-                onClick={() => setStep(5)}
-              >
-                Proceed to payment <Icon name="arrow" size={18} />
-              </button>
-            </div>
+            <button
+              className="button button-green"
+              type="button"
+              disabled={!reviewConfirmed}
+              onClick={() => setStep(5)}
+            >
+              Proceed to secure checkout <Icon name="arrow" size={18} />
+            </button>
           </section>
 
           <aside className="payment-help-panel payment-summary-aside">
-            <span className="help-panel-icon">
-              <Icon name="lock" size={20} />
-            </span>
-            <p className="eyebrow">Security standard</p>
-            <h3>Zero card handling on website</h3>
-            <p>
-              Chelmsford College never stores or processes payment card details. All transactions are handed off to external Level 1 PCI-DSS certified banking gateways.
+            <p className="eyebrow">Payment security</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--green-700)", fontWeight: 700, margin: "0.5rem 0" }}>
+              <Icon name="check-circle" size={18} />
+              <span>PCI-DSS Level 1 Encrypted</span>
+            </div>
+            <p style={{ fontSize: "0.85rem", lineHeight: "1.5" }}>
+              Card transactions are handled through 256-bit SSL encryption. The college does not store full credit or debit card numbers on website servers.
             </p>
           </aside>
         </div>
       )}
 
-      {/* STAGE 5: SECURE PAYMENT GATEWAY */}
+      {/* STAGE 5: SECURE GATEWAY HANDOFF & SIMULATION */}
       {step === 5 && (
-        <div className="payment-handoff-panel">
-          <span className="handoff-lock">
-            <Icon name="lock" size={28} />
-          </span>
-          <p className="eyebrow">External payment gateway</p>
-          <h2>
-            Pay securely<br />
-            <em>online.</em>
-          </h2>
-          <p className="handoff-description">
-            You will now complete your card payment on our secure banking provider service. Card details are processed directly by certified banking gateways and never stored on college servers.
-          </p>
+        <div className="payment-step-layout">
+          <section className="payment-step-main">
+            <button type="button" className="back-link payment-back" onClick={back}>
+              <Icon name="back" size={17} /> Return to review
+            </button>
+            <p className="eyebrow">Secure payment gateway</p>
+            <h2>Checkout demonstration.</h2>
+            <p className="payment-step-intro">
+              This interactive screen demonstrates the secure bank handoff and transaction processing states (success, decline, or cancellation).
+            </p>
 
-          <div className="handoff-summary">
-            <span>{selectedCategory.title}</span>
-            <span>Reference: {reference.trim()}</span>
-            <span>Payer: {payer === "student" ? studentName : payerName}</span>
-            <strong>Amount: {selectedCategory.amount}</strong>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.85rem",
-              maxWidth: "460px",
-              margin: "1.75rem auto 2rem",
-            }}
-          >
-            <button
-              type="button"
-              className="button button-green button-block"
-              onClick={() => triggerHandoff("success")}
-              style={{ minHeight: "48px" }}
+            <div
+              style={{
+                padding: "1.75rem",
+                background: "var(--surface)",
+                border: "1px solid var(--line)",
+                borderRadius: "8px",
+                marginBottom: "1.5rem",
+              }}
             >
-              Pay now ({selectedCategory.amount}) <Icon name="arrow" size={18} />
-            </button>
-
-            <details style={{ marginTop: "0.5rem", fontSize: "0.82rem", color: "var(--color-neutral-muted)" }}>
-              <summary style={{ cursor: "pointer", textAlign: "center" }}>Test simulated gateway responses</summary>
-              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
-                <button
-                  type="button"
-                  className="button button-outline button-block"
-                  onClick={() => triggerHandoff("declined")}
-                  style={{ minHeight: "40px", fontSize: "0.82rem", borderColor: "#e53e3e", color: "#c53030" }}
-                >
-                  Test card decline <Icon name="close" size={15} />
-                </button>
-                <button
-                  type="button"
-                  className="button button-outline button-block"
-                  onClick={() => triggerHandoff("cancelled")}
-                  style={{ minHeight: "40px", fontSize: "0.82rem" }}
-                >
-                  Test cancellation <Icon name="back" size={15} />
-                </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <div>
+                  <strong style={{ fontSize: "1.1rem", color: "var(--navy)" }}>Chelmsford College Payment Gateway</strong>
+                  <span style={{ display: "block", fontSize: "0.85rem", color: "var(--color-neutral-muted)" }}>
+                    Merchant ID: CC-ONLINE-MERCHANT-01
+                  </span>
+                </div>
+                <strong style={{ fontSize: "1.5rem", color: "var(--color-primary-blue)" }}>
+                  {currentAmountFormatted}
+                </strong>
               </div>
-            </details>
-          </div>
 
-          <div className="handoff-actions">
-            <button type="button" className="button button-outline" onClick={back}>
-              <Icon name="back" size={17} /> Back to review
-            </button>
-          </div>
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1rem" }}>
+                <p style={{ margin: "0 0 0.5rem", fontWeight: 700, fontSize: "0.92rem" }}>
+                  Demonstration outcome selector:
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    className="button button-green button-small"
+                    onClick={() => triggerHandoff("success")}
+                  >
+                    Simulate Success <Icon name="check" size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-outline button-small"
+                    onClick={() => triggerHandoff("declined")}
+                    style={{ color: "var(--color-primary-error)", borderColor: "var(--color-primary-error)" }}
+                  >
+                    Simulate Decline <Icon name="close" size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-outline button-small"
+                    onClick={() => triggerHandoff("cancelled")}
+                  >
+                    Simulate Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="payment-help-panel payment-summary-aside">
+            <p className="eyebrow">Procurement demonstration</p>
+            <h3>Simulated Gateway</h3>
+            <p style={{ fontSize: "0.85rem", lineHeight: "1.5" }}>
+              To protect bidder security, real payment gateway credentials are not connected in public prototype mode. Simulated outcomes verify all transaction handling flows.
+            </p>
+          </aside>
         </div>
       )}
 
-      {/* STAGE 6: CONFIRMATION STATES */}
+      {/* STAGE 6: TRANSACTION CONFIRMATION / OUTCOME */}
       {step === 6 && (
-        <div className="payment-confirmation" role="status" aria-live="polite">
-          {simulatedOutcome === "success" && (
-            <>
-              <span className="confirmation-check">
-                <Icon name="check" size={28} />
+        <div className="payment-confirmation">
+          {simulatedOutcome === "success" ? (
+            <div
+              style={{
+                padding: "2.5rem",
+                textAlign: "center",
+                background: "#ffffff",
+                border: "1px solid var(--line)",
+                borderRadius: "8px",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-grid",
+                  placeItems: "center",
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  background: "var(--green-50)",
+                  color: "var(--green-700)",
+                  marginBottom: "1rem",
+                }}
+              >
+                <Icon name="check-circle" size={32} />
               </span>
-              <p className="eyebrow">Payment confirmed</p>
-              <h2>
-                Payment successful.<br />
-                <em>Thank you.</em>
+              <p className="eyebrow" style={{ color: "var(--color-primary-green)" }}>
+                Payment authorised
+              </p>
+              <h2 style={{ fontSize: "2rem", color: "var(--navy)", margin: "0 0 0.5rem" }}>
+                Payment successful
               </h2>
-              <p>
-                Your payment for <strong>{selectedCategory.title}</strong> has been successfully processed.
+              <p style={{ color: "var(--body)", maxWidth: "520px", margin: "0 auto 1.5rem" }}>
+                Thank you. Your transaction of <strong>{currentAmountFormatted}</strong> for <strong>{currentTitle}</strong> has been confirmed. A receipt has been dispatched to <strong>{payerEmail}</strong>.
               </p>
 
-              <div className="payment-confirmation-card">
-                <div>
-                  <span>Transaction ID</span>
-                  <strong>{transactionId}</strong>
+              <div
+                style={{
+                  maxWidth: "480px",
+                  margin: "0 auto 2rem",
+                  padding: "1.25rem",
+                  background: "var(--surface)",
+                  borderRadius: "8px",
+                  textAlign: "left",
+                  fontSize: "0.92rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.6rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Transaction ID</span>
+                  <code style={{ fontWeight: 700 }}>{transactionId}</code>
                 </div>
-                <div>
-                  <span>Payment category</span>
-                  <strong>{selectedCategory.title}</strong>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Student</span>
+                  <strong>{studentName}</strong>
                 </div>
-                <div>
-                  <span>College reference</span>
-                  <strong>{reference.trim()}</strong>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Reference</span>
+                  <strong>{resolvedReference}</strong>
                 </div>
-                <div>
-                  <span>Amount paid</span>
-                  <strong>{selectedCategory.amount}</strong>
-                </div>
-                <div>
-                  <span>Payer</span>
-                  <strong>{payerLabel}: {payer === "student" ? studentName : payerName}</strong>
-                </div>
-                {payer === "parent" && (
-                  <div>
-                    <span>Student name</span>
-                    <strong>{studentName}</strong>
-                  </div>
-                )}
-                <div>
-                  <span>Receipt destination</span>
-                  <strong>{payerEmail}</strong>
-                </div>
-                <div>
-                  <span>Timestamp</span>
-                  <strong>{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</strong>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--color-neutral-muted)" }}>Amount paid</span>
+                  <strong style={{ color: "var(--green-700)" }}>{currentAmountFormatted}</strong>
                 </div>
               </div>
 
-              <div className="payment-review-actions">
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
                 <button
-                  className="button button-outline"
                   type="button"
+                  className="button button-outline"
                   onClick={() => window.print()}
                 >
-                  Print / Save receipt <Icon name="arrow-up-right" size={16} />
+                  Print payment receipt <Icon name="arrow-up-right" size={16} />
                 </button>
-                <button
-                  className="button button-primary"
-                  type="button"
-                  onClick={() => {
-                    setStep(1);
-                    setReference("");
-                    setReviewConfirmed(false);
-                  }}
-                >
-                  Make another payment <Icon name="arrow" size={17} />
-                </button>
-                <Link className="button button-outline" href="/">
-                  Return home
+                <Link className="button button-primary" href="/">
+                  Return to homepage <Icon name="arrow" size={17} />
                 </Link>
               </div>
-            </>
-          )}
-
-          {simulatedOutcome === "declined" && (
-            <>
+            </div>
+          ) : simulatedOutcome === "declined" ? (
+            <div
+              style={{
+                padding: "2.5rem",
+                textAlign: "center",
+                background: "#ffffff",
+                border: "1px solid var(--line)",
+                borderRadius: "8px",
+              }}
+            >
               <span
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "inline-grid",
+                  placeItems: "center",
                   width: "56px",
                   height: "56px",
                   borderRadius: "50%",
-                  background: "#fed7d7",
-                  color: "#c53030",
-                  margin: "0 auto 1.25rem",
+                  background: "#fef2f2",
+                  color: "var(--color-primary-error)",
+                  marginBottom: "1rem",
                 }}
               >
-                <Icon name="close" size={28} />
+                <Icon name="close" size={32} />
               </span>
-              <p className="eyebrow">Payment declined</p>
-              <h2>
-                Transaction unsuccessful.<br />
-                <em>No funds were taken.</em>
+              <p className="eyebrow" style={{ color: "var(--color-primary-error)" }}>
+                Transaction not authorised
+              </p>
+              <h2 style={{ fontSize: "2rem", color: "var(--navy)", margin: "0 0 0.5rem" }}>
+                Payment declined
               </h2>
-              <p>
-                The card issuer declined this transaction.
+              <p style={{ color: "var(--body)", maxWidth: "520px", margin: "0 auto 1.5rem" }}>
+                Your payment provider declined the transaction. No charges have been made. Please check your card details or try a different payment method.
               </p>
 
-              <div
-                className="payment-confirmation-card"
-                style={{ borderColor: "#feb2b2", background: "#fff5f5" }}
-              >
-                <div>
-                  <span>Decline code</span>
-                  <strong style={{ color: "#c53030" }}>DECLINED_05: Card Refused by Issuer</strong>
-                </div>
-                <div>
-                  <span>Category</span>
-                  <strong>{selectedCategory.title}</strong>
-                </div>
-                <div>
-                  <span>Reference</span>
-                  <strong>{reference.trim()}</strong>
-                </div>
-                <div>
-                  <span>Attempted amount</span>
-                  <strong>{selectedCategory.amount}</strong>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid var(--color-neutral-border)",
-                  borderRadius: "12px",
-                  padding: "1.25rem",
-                  margin: "1.5rem 0",
-                  textAlign: "left",
-                  fontSize: "0.9rem",
-                  lineHeight: "1.6",
-                }}
-              >
-                <strong>What you can do:</strong>
-                <ul style={{ paddingLeft: "1.25rem", marginTop: "0.5rem" }}>
-                  <li>Check that your card details and billing address are correct.</li>
-                  <li>Verify 3D Secure approval with your mobile banking application.</li>
-                  <li>Contact the Chelmsford College Finance Office at 01245 265611 (Ext. 204) for payment support.</li>
-                </ul>
-              </div>
-
-              <div className="payment-review-actions">
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
                 <button
-                  className="button button-primary"
                   type="button"
+                  className="button button-primary"
                   onClick={() => setStep(5)}
                 >
-                  Retry payment handoff <Icon name="arrow" size={17} />
-                </button>
-                <button
-                  className="button button-outline"
-                  type="button"
-                  onClick={() => setStep(4)}
-                >
-                  Edit payment details
-                </button>
-              </div>
-            </>
-          )}
-
-          {simulatedOutcome === "cancelled" && (
-            <>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "50%",
-                  background: "#edf2f7",
-                  color: "#4a5568",
-                  margin: "0 auto 1.25rem",
-                }}
-              >
-                <Icon name="back" size={28} />
-              </span>
-              <p className="eyebrow">Payment cancelled</p>
-              <h2>
-                Transaction cancelled.<br />
-                <em>No funds were debited.</em>
-              </h2>
-              <p>
-                You cancelled the external payment process before completion. Your {selectedCategory.title.toLowerCase()} remains outstanding.
-              </p>
-
-              <div className="payment-confirmation-card">
-                <div>
-                  <span>Status</span>
-                  <strong>Cancelled by user</strong>
-                </div>
-                <div>
-                  <span>Payment category</span>
-                  <strong>{selectedCategory.title}</strong>
-                </div>
-                <div>
-                  <span>Reference</span>
-                  <strong>{reference.trim()}</strong>
-                </div>
-                <div>
-                  <span>Amount outstanding</span>
-                  <strong>{selectedCategory.amount}</strong>
-                </div>
-              </div>
-
-              <div className="payment-review-actions">
-                <button
-                  className="button button-primary"
-                  type="button"
-                  onClick={() => setStep(4)}
-                >
-                  Return to payment review <Icon name="arrow" size={17} />
-                </button>
-                <button
-                  className="button button-outline"
-                  type="button"
-                  onClick={() => {
-                    setStep(1);
-                    setReference("");
-                    setReviewConfirmed(false);
-                  }}
-                >
-                  Start over
+                  Try again <Icon name="arrow" size={17} />
                 </button>
                 <Link className="button button-outline" href="/">
-                  Return home
+                  Cancel and return home
                 </Link>
               </div>
-            </>
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: "2.5rem",
+                textAlign: "center",
+                background: "#ffffff",
+                border: "1px solid var(--line)",
+                borderRadius: "8px",
+              }}
+            >
+              <p className="eyebrow">Payment cancelled</p>
+              <h2 style={{ fontSize: "2rem", color: "var(--navy)", margin: "0 0 0.5rem" }}>
+                Transaction cancelled
+              </h2>
+              <p style={{ color: "var(--body)", maxWidth: "520px", margin: "0 auto 1.5rem" }}>
+                You have cancelled the checkout process. No funds were debited. You can restart your payment whenever you are ready.
+              </p>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => setStep(1)}
+              >
+                Start new payment <Icon name="arrow" size={17} />
+              </button>
+            </div>
           )}
         </div>
       )}

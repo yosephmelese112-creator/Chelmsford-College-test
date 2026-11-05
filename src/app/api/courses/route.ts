@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const mode = searchParams.get("mode") || "";
   const campus = searchParams.get("campus") || "";
 
-  let dataset = courses;
+  let dataset: any[] = courses;
 
   // If a live database connection exists, query the database table
   if (process.env.DATABASE_URL) {
@@ -19,23 +19,14 @@ export async function GET(request: Request) {
       const records = await db.select().from(collegeCourses);
       if (records && records.length > 0) {
         dataset = records.map((r) => ({
-          id: r.id,
-          title: r.title,
-          subject: r.subject,
-          qualification: r.qualification,
-          level: r.level,
-          duration: r.duration,
-          mode: r.mode,
-          campus: r.campus,
-          startDate: r.startDate,
-          overview: r.overview,
+          ...r,
+          studyOverviewHtml: r.overview,
+          courseForMeHtml: r.overview,
           entryRequirements: r.entryRequirements ? JSON.parse(r.entryRequirements) : undefined,
           modules: r.modules ? JSON.parse(r.modules) : undefined,
           assessment: r.assessment ?? undefined,
           fees: r.fees ?? undefined,
           progression: r.progression ?? undefined,
-          image: r.image,
-          imageAlt: r.imageAlt,
         }));
       }
     } catch {

@@ -2,9 +2,15 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { showcaseEvent, type Presentation } from "@/lib/content";
+import { showcaseEvent, type CollegeEvent } from "@/lib/content";
 import { Icon } from "@/components/icon";
 import { CustomSelect } from "@/components/custom-select";
+import { triggerCalendarDownload } from "@/lib/calendar";
+
+interface PresentationItem {
+  department: string;
+  times: string[];
+}
 
 interface EventInfo {
   slug: string;
@@ -13,7 +19,7 @@ interface EventInfo {
   time: string;
   location: string;
   parking: string;
-  presentations?: Presentation[];
+  presentations?: PresentationItem[];
 }
 
 const guestOptions = [
@@ -52,8 +58,8 @@ export function EventRegistrationForm({ event = showcaseEvent }: { event?: Event
   // Extract presentation slots for select options
   const presentationOptions = [
     { value: "", label: "General drop-in arrival (no specific talk)" },
-    ...(event.presentations?.flatMap((p) =>
-      p.times.map((t) => ({
+    ...(event.presentations?.flatMap((p: PresentationItem) =>
+      p.times.map((t: string) => ({
         value: `${p.department} — ${t}`,
         label: `${p.department} (${t})`,
       }))
@@ -169,6 +175,13 @@ export function EventRegistrationForm({ event = showcaseEvent }: { event?: Event
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
+          <button
+            type="button"
+            className="button button-green"
+            onClick={() => triggerCalendarDownload(event as CollegeEvent)}
+          >
+            <Icon name="calendar" size={17} /> Add to calendar (.ics)
+          </button>
           <button
             type="button"
             className="button button-outline"
@@ -289,7 +302,7 @@ export function EventRegistrationForm({ event = showcaseEvent }: { event?: Event
       )}
 
       <button className="button button-green button-block" type="submit" disabled={loading}>
-        {loading ? "Confirming your booking…" : "Complete free booking"}
+        {loading ? "Confirming your booking…" : "Book a place"}
         <Icon name="arrow" size={18} />
       </button>
 

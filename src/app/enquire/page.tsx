@@ -1,9 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Icon } from "@/components/icon";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { courseById } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: "Course Applications & Admissions Enquiry | Chelmsford College",
+  description:
+    "Apply for courses or submit admissions enquiries directly to the Chelmsford College admissions team. Fast response on bursaries, entry grades, and course suitability.",
+};
 
 type SearchParams = Record<string, string | string[] | undefined>;
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? "" : value ?? "");

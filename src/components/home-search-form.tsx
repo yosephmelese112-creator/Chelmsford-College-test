@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { CustomSelect } from "@/components/custom-select";
-import { campuses } from "@/lib/content";
 
 export interface SubjectAreaOption {
   name: string;
@@ -23,13 +22,16 @@ export function HomeSearchForm({ subjectAreas }: { subjectAreas: SubjectAreaOpti
 
   const levelOptions = [
     { value: "", label: "Any level" },
-    { value: "Level 2", label: "Level 2" },
-    { value: "Level 3", label: "Level 3" },
+    { value: "Level 1", label: "Level 1 (Foundation)" },
+    { value: "Level 2", label: "Level 2 (Intermediate)" },
+    { value: "Level 3", label: "Level 3 (Advanced & T Levels)" },
+    { value: "Entry / RARPA", label: "Entry Level & RARPA" },
   ];
 
   const campusOptions = [
-    { value: "", label: "All campuses" },
-    ...campuses.map((c) => ({ value: c.name, label: c.name })),
+    { value: "", label: "All campuses (illustrative)" },
+    { value: "Moulsham Street campus", label: "Moulsham Street campus (illustrative)" },
+    { value: "Princes Road campus", label: "Princes Road campus (illustrative)" },
   ];
 
   return (
@@ -38,7 +40,12 @@ export function HomeSearchForm({ subjectAreas }: { subjectAreas: SubjectAreaOpti
         <span>Course or subject</span>
         <span className="input-with-icon">
           <Icon name="search" size={19} />
-          <input name="q" type="search" placeholder="Try fashion, digital or travel" />
+          <input
+            name="q"
+            type="search"
+            placeholder="Try fashion, electrical, graphic design or plumbing"
+            aria-label="Search by course or subject keyword"
+          />
         </span>
       </label>
 
@@ -73,12 +80,12 @@ export function HomeSearchForm({ subjectAreas }: { subjectAreas: SubjectAreaOpti
           value={campus}
           onChange={setCampus}
           options={campusOptions}
-          placeholder="All campuses"
+          placeholder="All campuses (illustrative)"
           aria-label="Filter by college campus"
         />
       </div>
 
-      <button className="button button-primary search-submit" type="submit">
+      <button className="button button-primary search-submit" type="submit" aria-label="Search courses with selected filters">
         Search courses <Icon name="arrow" size={18} />
       </button>
     </form>

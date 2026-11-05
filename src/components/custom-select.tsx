@@ -60,6 +60,13 @@ export function CustomSelect({
   const selectedOption = options.find((opt) => opt.value === value);
   const displayLabel = selectedOption ? selectedOption.label : placeholder;
 
+  // WCAG 2.5.3 (Label in Name): spoken accessible name MUST contain the visible text
+  const computedAriaLabel = ariaLabel
+    ? ariaLabel.toLowerCase().includes(displayLabel.toLowerCase())
+      ? ariaLabel
+      : `${ariaLabel}: ${displayLabel}`
+    : displayLabel;
+
   return (
     <div
       ref={containerRef}
@@ -74,7 +81,7 @@ export function CustomSelect({
         className="custom-select-trigger"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={ariaLabel || displayLabel}
+        aria-label={computedAriaLabel}
         disabled={disabled}
         onClick={(e) => {
           e.preventDefault();
@@ -91,7 +98,11 @@ export function CustomSelect({
       </button>
 
       {open && !disabled && (
-        <ul className="custom-select-dropdown" role="listbox" aria-label={ariaLabel || displayLabel}>
+        <ul
+          className="custom-select-dropdown"
+          role="listbox"
+          aria-label={computedAriaLabel}
+        >
           {options.map((option) => {
             const isSelected = option.value === value;
             return (
@@ -108,7 +119,11 @@ export function CustomSelect({
                 }}
               >
                 <span>{option.label}</span>
-                {isSelected && <Icon name="check" size={16} />}
+                {isSelected && (
+                  <span className="custom-select-check" aria-hidden="true">
+                    <Icon name="check" size={16} />
+                  </span>
+                )}
               </li>
             );
           })}
@@ -117,4 +132,3 @@ export function CustomSelect({
     </div>
   );
 }
-
