@@ -7,11 +7,122 @@ import type { Course } from "@/lib/content";
 import { Icon } from "@/components/icon";
 import { CustomSelect } from "@/components/custom-select";
 
+const subjectSelectOptions = [
+  { value: "", label: "All subjects" },
+  ...subjectAreas.map((area) => ({ value: area.name, label: area.name })),
+];
+
+const levelSelectOptions = [
+  { value: "", label: "Any level" },
+  { value: "Level 1", label: "Level 1" },
+  { value: "Level 2", label: "Level 2" },
+  { value: "Level 3", label: "Level 3" },
+  { value: "Entry / RARPA", label: "Entry Level / RARPA" },
+];
+
+const modeSelectOptions = [
+  { value: "", label: "Any study mode" },
+  { value: "Full-time", label: "Full-time" },
+  { value: "Online", label: "Online" },
+];
+
+const campusSelectOptions = [
+  { value: "", label: "All campuses" },
+  { value: "Moulsham Street campus", label: "Moulsham Street campus (illustrative)" },
+  { value: "Princes Road campus", label: "Princes Road campus (illustrative)" },
+];
+
+const fundingSelectOptions = [
+  { value: "", label: "All funding types" },
+  { value: "16-18", label: "Free for 16–18 Learners" },
+  { value: "Level 3", label: "Free Level 3 Entitlement" },
+  { value: "Loans", label: "Advanced Learner Loans" },
+];
+
 const sortOptions = [
   { value: "recommended", label: "Recommended" },
   { value: "title", label: "Course A–Z" },
   { value: "duration", label: "Duration" },
 ];
+
+function FilterFields({
+  subject,
+  level,
+  mode,
+  campus,
+  funding,
+  onSubject,
+  onLevel,
+  onMode,
+  onCampus,
+  onFunding,
+}: {
+  subject: string;
+  level: string;
+  mode: string;
+  campus: string;
+  funding: string;
+  onSubject: (value: string) => void;
+  onLevel: (value: string) => void;
+  onMode: (value: string) => void;
+  onCampus: (value: string) => void;
+  onFunding: (value: string) => void;
+}) {
+  return (
+    <div className="filter-fields">
+      <div className="form-field">
+        <span>Subject area</span>
+        <CustomSelect
+          value={subject}
+          onChange={onSubject}
+          options={subjectSelectOptions}
+          placeholder="All subjects"
+          aria-label="Subject area"
+        />
+      </div>
+      <div className="form-field">
+        <span>Qualification level</span>
+        <CustomSelect
+          value={level}
+          onChange={onLevel}
+          options={levelSelectOptions}
+          placeholder="Any level"
+          aria-label="Qualification level"
+        />
+      </div>
+      <div className="form-field">
+        <span>Study mode</span>
+        <CustomSelect
+          value={mode}
+          onChange={onMode}
+          options={modeSelectOptions}
+          placeholder="Any study mode"
+          aria-label="Study mode"
+        />
+      </div>
+      <div className="form-field">
+        <span>Campus</span>
+        <CustomSelect
+          value={campus}
+          onChange={onCampus}
+          options={campusSelectOptions}
+          placeholder="All campuses"
+          aria-label="Campus"
+        />
+      </div>
+      <div className="form-field">
+        <span>Funding support</span>
+        <CustomSelect
+          value={funding}
+          onChange={onFunding}
+          options={fundingSelectOptions}
+          placeholder="All funding types"
+          aria-label="Funding support"
+        />
+      </div>
+    </div>
+  );
+}
 
 function ResultCard({ course }: { course: Course }) {
   return (
@@ -19,15 +130,15 @@ function ResultCard({ course }: { course: Course }) {
       <Link
         href={`/courses/${course.id}`}
         className="course-result-image"
-        aria-label={`View details for ${course.title}`}
+        tabIndex={-1}
+        aria-hidden="true"
       >
-        <img src={course.image} alt={course.imageAlt} loading="lazy" />
+        <img src={course.image} alt="" loading="lazy" />
       </Link>
       <div className="course-result-content">
         <div className="course-result-meta">
           <span className="tag tag-blue">{course.subject}</span>
-          <span className="tag tag-green">{course.level}</span>
-          <span className="tag tag-neutral">{course.mode}</span>
+          <span className="tag tag-neutral">{course.level}</span>
         </div>
         <h2>
           <Link href={`/courses/${course.id}`}>{course.title}</Link>
@@ -35,16 +146,13 @@ function ResultCard({ course }: { course: Course }) {
         <p className="course-result-qualification">{course.qualification}</p>
         <div className="course-result-facts">
           <span>
-            <Icon name="calendar" size={16} /> Starts: {course.startDate}
+            <Icon name="calendar" size={16} /> {course.duration}
           </span>
           <span>
-            <Icon name="sparkle" size={15} /> {course.duration} · {course.mode}
+            <Icon name="sparkle" size={15} /> {course.mode}
           </span>
           <span>
             <Icon name="location" size={15} /> {course.campus}
-            <small style={{ fontSize: "0.74rem", color: "var(--color-neutral-muted)", marginLeft: "4px" }}>
-              (illustrative)
-            </small>
           </span>
         </div>
         <Link className="text-link" href={`/courses/${course.id}`}>
@@ -79,13 +187,6 @@ export function CourseSearch({
 }) {
   const [query, setQuery] = useState(initialQuery);
 
-  // Active filters applied to the dataset
-  const [activeSubject, setActiveSubject] = useState(initialSubject);
-  const [activeLevel, setActiveLevel] = useState(initialLevel);
-  const [activeMode, setActiveMode] = useState(initialMode);
-  const [activeCampus, setActiveCampus] = useState(initialCampus);
-  const [activeFunding, setActiveFunding] = useState(initialFunding);
-
   // Staged / draft filters selected in the form controls
   const [draftSubject, setDraftSubject] = useState(initialSubject);
   const [draftLevel, setDraftLevel] = useState(initialLevel);
@@ -93,8 +194,15 @@ export function CourseSearch({
   const [draftCampus, setDraftCampus] = useState(initialCampus);
   const [draftFunding, setDraftFunding] = useState(initialFunding);
 
-  const [sortBy, setSortBy] = useState("recommended");
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  // Active filters applied to the course results
+  const [appliedSubject, setAppliedSubject] = useState(initialSubject);
+  const [appliedLevel, setAppliedLevel] = useState(initialLevel);
+  const [appliedMode, setAppliedMode] = useState(initialMode);
+  const [appliedCampus, setAppliedCampus] = useState(initialCampus);
+  const [appliedFunding, setAppliedFunding] = useState(initialFunding);
+
+  const [sort, setSort] = useState("recommended");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   // Sync state if initial props change (e.g. navigation via URL search params)
   const [prevParams, setPrevParams] = useState({
@@ -123,572 +231,431 @@ export function CourseSearch({
       funding: initialFunding,
     });
     setQuery(initialQuery);
-    setActiveSubject(initialSubject);
-    setActiveLevel(initialLevel);
-    setActiveMode(initialMode);
-    setActiveCampus(initialCampus);
-    setActiveFunding(initialFunding);
     setDraftSubject(initialSubject);
     setDraftLevel(initialLevel);
     setDraftMode(initialMode);
     setDraftCampus(initialCampus);
     setDraftFunding(initialFunding);
+    setAppliedSubject(initialSubject);
+    setAppliedLevel(initialLevel);
+    setAppliedMode(initialMode);
+    setAppliedCampus(initialCampus);
+    setAppliedFunding(initialFunding);
   }
 
-  function openMobileFilters() {
-    setDraftSubject(activeSubject);
-    setDraftLevel(activeLevel);
-    setDraftMode(activeMode);
-    setDraftCampus(activeCampus);
-    setDraftFunding(activeFunding);
-    setMobileFilterOpen(true);
-  }
-
-  // Compute available dynamic filter options that actually return results
-  const dynamicFilterOptions = useMemo(() => {
-    // Collect unique available values across all courses
-    const allSubjects = Array.from(new Set(courses.map((c) => c.subject))).sort();
-    const allLevels = Array.from(new Set(courses.map((c) => c.level))).sort();
-    // Study mode: strictly Full-time and Online (no Part-time)
-    const allModes = ["Full-time", "Online"];
-    const allCampuses = [
-      { value: "Moulsham Street campus", label: "Moulsham Street campus (illustrative)" },
-      { value: "Princes Road campus", label: "Princes Road campus (illustrative)" },
-    ];
-    const allFundings = [
-      "16-18 funded",
-      "Adult Education / 19+",
-      "Advanced Learner Loans",
-    ];
-
-    return {
-      subjects: [
-        { value: "", label: "All subjects" },
-        ...allSubjects.map((s) => ({ value: s, label: s })),
-      ],
-      levels: [
-        { value: "", label: "Any level" },
-        ...allLevels.map((l) => ({ value: l, label: l })),
-      ],
-      modes: [
-        { value: "", label: "Any study mode" },
-        ...allModes.map((m) => ({ value: m, label: m })),
-      ],
-      campuses: [
-        { value: "", label: "All campuses (illustrative)" },
-        ...allCampuses,
-      ],
-      fundings: [
-        { value: "", label: "All funding types" },
-        ...allFundings.map((f) => ({ value: f, label: f })),
-      ],
+  // Handle mobile dialog scroll locking and Escape key
+  useEffect(() => {
+    if (!filterOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFilterOpen(false);
     };
-  }, []);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filterOpen]);
 
-  // Filter courses with all active criteria working together
-  const visibleCourses = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  const activeFilterCount = [
+    appliedSubject,
+    appliedLevel,
+    appliedMode,
+    appliedCampus,
+    appliedFunding,
+  ].filter(Boolean).length;
 
-    return courses
-      .filter((course) => {
-        const matchesQuery =
-          !q ||
-          course.title.toLowerCase().includes(q) ||
-          course.subject.toLowerCase().includes(q) ||
-          course.qualification.toLowerCase().includes(q) ||
-          course.overview.toLowerCase().includes(q) ||
-          course.skills.some((sk) => sk.toLowerCase().includes(q));
+  const applyFilters = () => {
+    setAppliedSubject(draftSubject);
+    setAppliedLevel(draftLevel);
+    setAppliedMode(draftMode);
+    setAppliedCampus(draftCampus);
+    setAppliedFunding(draftFunding);
+  };
 
-        const matchesSubject =
-          !activeSubject || course.subject.toLowerCase() === activeSubject.toLowerCase();
+  const applyMobileFilters = () => {
+    applyFilters();
+    setFilterOpen(false);
+  };
 
-        const matchesLevel =
-          !activeLevel || course.level.toLowerCase() === activeLevel.toLowerCase();
-
-        const matchesMode =
-          !activeMode || course.mode.toLowerCase() === activeMode.toLowerCase();
-
-        const matchesCampus =
-          !activeCampus ||
-          course.campus.toLowerCase().includes(activeCampus.toLowerCase()) ||
-          activeCampus.toLowerCase().includes(course.campus.toLowerCase());
-
-        const matchesFunding =
-          !activeFunding ||
-          course.fundingTags?.some((tag) =>
-            tag.toLowerCase().includes(activeFunding.toLowerCase())
-          );
-
-        return (
-          matchesQuery &&
-          matchesSubject &&
-          matchesLevel &&
-          matchesMode &&
-          matchesCampus &&
-          matchesFunding
-        );
-      })
-      .sort((a, b) => {
-        if (sortBy === "title") return a.title.localeCompare(b.title);
-        if (sortBy === "duration") return a.duration.localeCompare(b.duration);
-        return 0;
-      });
-  }, [query, activeSubject, activeLevel, activeMode, activeCampus, activeFunding, sortBy]);
-
-  // Apply staged filter changes
-  function applyFilters() {
-    setActiveSubject(draftSubject);
-    setActiveLevel(draftLevel);
-    setActiveMode(draftMode);
-    setActiveCampus(draftCampus);
-    setActiveFunding(draftFunding);
-    setMobileFilterOpen(false);
-  }
-
-  function clearAllFilters() {
+  const clearFilters = () => {
     setQuery("");
     setDraftSubject("");
     setDraftLevel("");
     setDraftMode("");
     setDraftCampus("");
     setDraftFunding("");
-    setActiveSubject("");
-    setActiveLevel("");
-    setActiveMode("");
-    setActiveCampus("");
-    setActiveFunding("");
-    setMobileFilterOpen(false);
-  }
+    setAppliedSubject("");
+    setAppliedLevel("");
+    setAppliedMode("");
+    setAppliedCampus("");
+    setAppliedFunding("");
+  };
 
-  const hasActiveFilters = Boolean(
-    query || activeSubject || activeLevel || activeMode || activeCampus || activeFunding
+  const removeFilter = (
+    filterType: "subject" | "level" | "mode" | "campus" | "funding"
+  ) => {
+    if (filterType === "subject") {
+      setDraftSubject("");
+      setAppliedSubject("");
+    } else if (filterType === "level") {
+      setDraftLevel("");
+      setAppliedLevel("");
+    } else if (filterType === "mode") {
+      setDraftMode("");
+      setAppliedMode("");
+    } else if (filterType === "campus") {
+      setDraftCampus("");
+      setAppliedCampus("");
+    } else if (filterType === "funding") {
+      setDraftFunding("");
+      setAppliedFunding("");
+    }
+  };
+
+  const openMobileFilters = () => {
+    setDraftSubject(appliedSubject);
+    setDraftLevel(appliedLevel);
+    setDraftMode(appliedMode);
+    setDraftCampus(appliedCampus);
+    setDraftFunding(appliedFunding);
+    setFilterOpen(true);
+  };
+
+  const visibleCourses = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    const matched = courses.filter((course) => {
+      const matchesSearch =
+        !search ||
+        `${course.title} ${course.subject} ${course.qualification} ${course.level} ${course.campus} ${course.mode} ${course.skills?.join(" ")}`
+          .toLowerCase()
+          .includes(search);
+
+      const matchesSubject = !appliedSubject || course.subject === appliedSubject;
+      const matchesLevel =
+        !appliedLevel ||
+        course.level === appliedLevel ||
+        (appliedLevel === "Entry / RARPA" &&
+          (course.level.includes("Entry") || course.level.includes("RARPA")));
+      const matchesMode = !appliedMode || course.mode === appliedMode;
+      const matchesCampus =
+        !appliedCampus ||
+        course.campus.toLowerCase().includes(appliedCampus.toLowerCase().replace(" (illustrative)", ""));
+      const matchesFunding =
+        !appliedFunding ||
+        (course.funding && course.funding.toLowerCase().includes(appliedFunding.toLowerCase()));
+
+      return (
+        matchesSearch &&
+        matchesSubject &&
+        matchesLevel &&
+        matchesMode &&
+        matchesCampus &&
+        matchesFunding
+      );
+    });
+
+    if (sort === "title") matched.sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "duration") matched.sort((a, b) => a.duration.localeCompare(b.duration));
+    return matched;
+  }, [appliedCampus, appliedFunding, appliedLevel, appliedMode, appliedSubject, query, sort]);
+
+  const hasDraftChanges =
+    draftSubject !== appliedSubject ||
+    draftLevel !== appliedLevel ||
+    draftMode !== appliedMode ||
+    draftCampus !== appliedCampus ||
+    draftFunding !== appliedFunding;
+
+  const fields = (prefix: string) => (
+    <FilterFields
+      subject={draftSubject}
+      level={draftLevel}
+      mode={draftMode}
+      campus={draftCampus}
+      funding={draftFunding}
+      onSubject={setDraftSubject}
+      onLevel={setDraftLevel}
+      onMode={setDraftMode}
+      onCampus={setDraftCampus}
+      onFunding={setDraftFunding}
+      key={prefix}
+    />
   );
 
   return (
-    <div className="shell courses-page">
+    <div className="shell course-search-page">
       <div className="page-breadcrumb">
         <Link href="/">Home</Link>
         <span>/</span>
         <span>Courses</span>
-        {activeSubject && (
+        {appliedSubject && (
           <>
             <span>/</span>
-            <span>{activeSubject}</span>
+            <span>{appliedSubject}</span>
           </>
         )}
       </div>
 
-      <header className="courses-heading">
-        <div className="courses-heading-copy">
-          <p className="eyebrow">Find your course</p>
+      <header className="search-page-heading">
+        <div>
+          <p className="eyebrow">Find your direction</p>
           <h1>
             Courses to help<br className="desktop-break" /> you <em>take off.</em>
           </h1>
-          <p>
-            Explore all {courses.length} qualifications across both campuses. Filter by subject, level, study mode, illustrative campus, and funding support.
-          </p>
         </div>
-
-        <div className="courses-search-bar" role="search">
-          <label className="courses-search-input" htmlFor="course-search-field">
-            <Icon name="search" size={20} />
-            <input
-              id="course-search-field"
-              type="search"
-              placeholder="Search by course title, subject, or skill (e.g. fashion, graphic design, plumbing, IT)..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search courses by keyword, qualification or skill"
-            />
-            {query && (
-              <button
-                type="button"
-                className="clear-query-button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search keyword"
-              >
-                <Icon name="close" size={16} />
-              </button>
-            )}
-          </label>
-        </div>
+        <p>
+          Search the available course sample by keyword, subject, level, study mode or campus. If you’re not sure, start with a subject that interests you.
+        </p>
       </header>
 
-      {/* Main Results Layout */}
+      <form
+        className="results-searchbar"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          applyFilters();
+        }}
+      >
+        <label className="sr-only" htmlFor="course-query">
+          Search by course, subject, qualification or campus
+        </label>
+        <Icon name="search" size={21} />
+        <input
+          id="course-query"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search courses, subjects, qualifications or campus"
+        />
+        {query && (
+          <button className="clear-query" type="button" onClick={() => setQuery("")}>
+            Clear
+          </button>
+        )}
+        <button className="button button-primary searchbar-button" type="submit">
+          Search <Icon name="arrow" size={17} />
+        </button>
+      </form>
+
       <div className="results-layout">
-        {/* Desktop Filter Sidebar */}
-        <aside className="filter-sidebar" aria-label="Course filters">
-          <div className="filter-sidebar-header">
-            <h2 id="desktop-filter-heading">Filters</h2>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                className="clear-filters-link"
-                onClick={clearAllFilters}
-                aria-label="Clear all course filters"
-              >
+        <aside className="filters-sidebar" aria-label="Filter courses">
+          <div className="filter-heading">
+            <div>
+              <span className="filter-heading-icon">
+                <Icon name="filter" size={19} />
+              </span>
+              <h2>Filter courses</h2>
+            </div>
+            {(appliedSubject ||
+              appliedLevel ||
+              appliedMode ||
+              appliedCampus ||
+              appliedFunding ||
+              draftSubject ||
+              draftLevel ||
+              draftMode ||
+              draftCampus ||
+              draftFunding) && (
+              <button type="button" className="clear-filters" onClick={clearFilters}>
                 Clear all
               </button>
             )}
           </div>
 
-          <div className="filter-fields">
-            {/* Subject Filter */}
-            <div className="form-field">
-              <span id="subject-label">Subject area</span>
-              <CustomSelect
-                value={draftSubject}
-                onChange={(val) => {
-                  setDraftSubject(val);
-                  setActiveSubject(val);
-                }}
-                options={dynamicFilterOptions.subjects}
-                placeholder="All subjects"
-                aria-label="Subject area"
-              />
-            </div>
-
-            {/* Level Filter */}
-            <div className="form-field">
-              <span id="level-label">Qualification level</span>
-              <CustomSelect
-                value={draftLevel}
-                onChange={(val) => {
-                  setDraftLevel(val);
-                  setActiveLevel(val);
-                }}
-                options={dynamicFilterOptions.levels}
-                placeholder="Any level"
-                aria-label="Qualification level"
-              />
-            </div>
-
-            {/* Study Mode Filter - Full-time & Online only */}
-            <div className="form-field">
-              <span id="mode-label">Study mode</span>
-              <CustomSelect
-                value={draftMode}
-                onChange={(val) => {
-                  setDraftMode(val);
-                  setActiveMode(val);
-                }}
-                options={dynamicFilterOptions.modes}
-                placeholder="Any study mode"
-                aria-label="Study mode"
-              />
-            </div>
-
-            {/* Campus Filter - Illustrative campus note */}
-            <div className="form-field">
-              <span id="campus-label">Campus (illustrative)</span>
-              <CustomSelect
-                value={draftCampus}
-                onChange={(val) => {
-                  setDraftCampus(val);
-                  setActiveCampus(val);
-                }}
-                options={dynamicFilterOptions.campuses}
-                placeholder="All campuses (illustrative)"
-                aria-label="Campus location (illustrative)"
-              />
-            </div>
-
-            {/* Funding Filter */}
-            <div className="form-field">
-              <span id="funding-label">Funding support</span>
-              <CustomSelect
-                value={draftFunding}
-                onChange={(val) => {
-                  setDraftFunding(val);
-                  setActiveFunding(val);
-                }}
-                options={dynamicFilterOptions.fundings}
-                placeholder="All funding types"
-                aria-label="Funding support"
-              />
-            </div>
-          </div>
-
-          <div
-            className="filter-sidebar-note"
-            style={{
-              marginTop: "1.25rem",
-              padding: "0.85rem",
-              background: "var(--surface)",
-              borderRadius: "6px",
-              fontSize: "0.82rem",
-              color: "var(--color-neutral-muted)",
-              lineHeight: "1.45",
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              applyFilters();
             }}
           >
-            <Icon name="sparkle" size={14} style={{ color: "var(--color-primary-green)", marginRight: "4px" }} />
-            Campus assignments reflect college department facilities and are identified as illustrative.
+            {fields("desktop")}
+            <div className="filter-sidebar-actions">
+              <button
+                type="submit"
+                className="button button-primary button-block apply-filters-button"
+              >
+                Apply filters <Icon name="arrow" size={17} />
+              </button>
+            </div>
+          </form>
+
+          <div className="filter-sidebar-note">
+            <span className="note-check">
+              <Icon name="check" size={15} />
+            </span>
+            <p>
+              {hasDraftChanges
+                ? "Click apply filters to update your results."
+                : "Choose your criteria and click apply filters to update results."}
+            </p>
           </div>
         </aside>
 
-        {/* Results Stream */}
-        <section className="results-stream" aria-labelledby="results-heading">
+        <section className="results-content" aria-labelledby="results-heading">
+          <div className="mobile-filter-row">
+            <button
+              type="button"
+              className="filter-open-button"
+              aria-expanded={filterOpen}
+              aria-controls="mobile-filters"
+              onClick={openMobileFilters}
+            >
+              <Icon name="filter" size={18} />
+              <span>Filters</span>
+              {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+            </button>
+            <div className="sort-control">
+              <span>Sort</span>
+              <CustomSelect
+                value={sort}
+                onChange={setSort}
+                options={sortOptions}
+                placeholder="Sort"
+                aria-label="Sort courses"
+                className="sort-select"
+              />
+            </div>
+          </div>
+
           <div className="results-toolbar">
             <div>
               <p className="eyebrow">Course directory</p>
               <h2 id="results-heading">
-                {visibleCourses.length} {visibleCourses.length === 1 ? "course" : "courses"} found
+                {visibleCourses.length} {visibleCourses.length === 1 ? "course" : "courses"}
+                {query.trim() ? <span className="query-label"> for “{query.trim()}”</span> : null}
               </h2>
             </div>
-
-            <div className="results-sort-bar">
-              {/* Mobile Filter Toggle Button */}
-              <button
-                type="button"
-                className="button button-outline mobile-filter-toggle"
-                onClick={openMobileFilters}
-                aria-label={`Open course filters (${hasActiveFilters ? "filters active" : "none active"})`}
-              >
-                <Icon name="sparkle" size={16} /> Filters
-                {hasActiveFilters && <span className="filter-indicator-dot" />}
-              </button>
-
-              <div className="form-field sort-field">
-                <span className="sr-only">Sort courses by</span>
-                <CustomSelect
-                  value={sortBy}
-                  onChange={setSortBy}
-                  options={sortOptions}
-                  placeholder="Sort courses"
-                  aria-label="Sort courses by"
-                />
-              </div>
+            <div className="sort-control desktop-sort">
+              <span>Sort by</span>
+              <CustomSelect
+                value={sort}
+                onChange={setSort}
+                options={sortOptions}
+                placeholder="Sort by"
+                aria-label="Sort courses"
+                className="sort-select"
+              />
             </div>
           </div>
 
-          {/* Active Filter Chips */}
-          {hasActiveFilters && (
-            <div className="active-filters-row" aria-label="Currently active filters">
-              <span className="active-filters-label">Active filters:</span>
-              {query && (
-                <button
-                  type="button"
-                  className="filter-chip"
-                  onClick={() => setQuery("")}
-                  aria-label={`Remove keyword filter: ${query}`}
-                >
-                  <span>Keyword: {query}</span>
+          {(appliedSubject ||
+            appliedLevel ||
+            appliedMode ||
+            appliedCampus ||
+            appliedFunding) && (
+            <div className="active-filters" aria-label="Active filters">
+              <span>Active:</span>
+              {appliedSubject && (
+                <button type="button" onClick={() => removeFilter("subject")}>
+                  {appliedSubject}
                   <Icon name="close" size={14} />
                 </button>
               )}
-              {activeSubject && (
-                <button
-                  type="button"
-                  className="filter-chip"
-                  onClick={() => {
-                    setActiveSubject("");
-                    setDraftSubject("");
-                  }}
-                  aria-label={`Remove subject filter: ${activeSubject}`}
-                >
-                  <span>Subject: {activeSubject}</span>
+              {appliedLevel && (
+                <button type="button" onClick={() => removeFilter("level")}>
+                  {appliedLevel}
                   <Icon name="close" size={14} />
                 </button>
               )}
-              {activeLevel && (
-                <button
-                  type="button"
-                  className="filter-chip"
-                  onClick={() => {
-                    setActiveLevel("");
-                    setDraftLevel("");
-                  }}
-                  aria-label={`Remove level filter: ${activeLevel}`}
-                >
-                  <span>Level: {activeLevel}</span>
+              {appliedMode && (
+                <button type="button" onClick={() => removeFilter("mode")}>
+                  {appliedMode}
                   <Icon name="close" size={14} />
                 </button>
               )}
-              {activeMode && (
-                <button
-                  type="button"
-                  className="filter-chip"
-                  onClick={() => {
-                    setActiveMode("");
-                    setDraftMode("");
-                  }}
-                  aria-label={`Remove study mode filter: ${activeMode}`}
-                >
-                  <span>Mode: {activeMode}</span>
+              {appliedCampus && (
+                <button type="button" onClick={() => removeFilter("campus")}>
+                  {appliedCampus}
                   <Icon name="close" size={14} />
                 </button>
               )}
-              {activeCampus && (
-                <button
-                  type="button"
-                  className="filter-chip"
-                  onClick={() => {
-                    setActiveCampus("");
-                    setDraftCampus("");
-                  }}
-                  aria-label={`Remove campus filter: ${activeCampus}`}
-                >
-                  <span>Campus: {activeCampus}</span>
+              {appliedFunding && (
+                <button type="button" onClick={() => removeFilter("funding")}>
+                  {appliedFunding}
                   <Icon name="close" size={14} />
                 </button>
               )}
-              {activeFunding && (
-                <button
-                  type="button"
-                  className="filter-chip"
-                  onClick={() => {
-                    setActiveFunding("");
-                    setDraftFunding("");
-                  }}
-                  aria-label={`Remove funding filter: ${activeFunding}`}
-                >
-                  <span>Funding: {activeFunding}</span>
-                  <Icon name="close" size={14} />
-                </button>
-              )}
-              <button
-                type="button"
-                className="clear-all-chips"
-                onClick={clearAllFilters}
-                aria-label="Clear all active filters"
-              >
-                Reset filters
+              <button type="button" className="active-clear" onClick={clearFilters}>
+                Clear all
               </button>
             </div>
           )}
 
-          {/* Results List */}
-          <div className="course-results-list" aria-live="polite">
-            {visibleCourses.length > 0 ? (
-              visibleCourses.map((course) => (
+          {visibleCourses.length > 0 ? (
+            <div className="course-results-list">
+              {visibleCourses.map((course) => (
                 <ResultCard course={course} key={course.id} />
-              ))
-            ) : (
-              <div className="empty-state">
-                <span className="empty-state-icon">
-                  <Icon name="search" size={24} />
-                </span>
-                <p className="eyebrow">No matching courses</p>
-                <h3>Try broadening your search or adjusting filters.</h3>
-                <p>
-                  No qualifications match your current combination of filters. You can clear individual filters or reset all criteria to view the complete catalogue of {courses.length} courses.
-                </p>
-                <button
-                  className="button button-outline"
-                  type="button"
-                  onClick={clearAllFilters}
-                  aria-label="Clear all filters to view all courses"
-                >
-                  Show all {courses.length} courses <Icon name="arrow" size={17} />
-                </button>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span className="empty-state-icon">
+                <Icon name="search" size={23} />
+              </span>
+              <p className="eyebrow">No matches just yet</p>
+              <h3>Try a different search or filter.</h3>
+              <p>Change your keywords or clear your filters to view all courses in this sample.</p>
+              <button type="button" className="button button-outline" onClick={clearFilters}>
+                Clear search and filters <Icon name="arrow" size={17} />
+              </button>
+            </div>
+          )}
         </section>
       </div>
 
-      {/* Mobile Filters Slide-over / Modal */}
-      {mobileFilterOpen && (
-        <div
-          className="mobile-filter-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mobile-filter-title"
-        >
-          <div
-            className="mobile-filter-backdrop"
-            onClick={() => setMobileFilterOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="mobile-filter-sheet">
-            <div className="mobile-filter-header">
-              <h2 id="mobile-filter-title">Course filters</h2>
+      {filterOpen && (
+        <div className="mobile-filter-overlay" onClick={() => setFilterOpen(false)}>
+          <aside
+            id="mobile-filters"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-filter-title"
+            className="mobile-filter-sheet"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mobile-filter-title-row">
+              <div>
+                <p className="eyebrow">Narrow your search</p>
+                <h2 id="mobile-filter-title">Course filters</h2>
+              </div>
               <button
                 type="button"
-                className="mobile-filter-close"
-                onClick={() => setMobileFilterOpen(false)}
-                aria-label="Close filters dialog"
+                className="icon-button"
+                aria-label="Close filters"
+                onClick={() => setFilterOpen(false)}
               >
                 <Icon name="close" size={20} />
               </button>
             </div>
 
-            <div className="mobile-filter-body">
-              <div className="form-field">
-                <span>Subject area</span>
-                <CustomSelect
-                  value={draftSubject}
-                  onChange={setDraftSubject}
-                  options={dynamicFilterOptions.subjects}
-                  placeholder="All subjects"
-                  aria-label="Subject area"
-                />
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                applyMobileFilters();
+              }}
+            >
+              {fields("mobile")}
+              <div className="filter-sidebar-actions">
+                <button
+                  type="submit"
+                  className="button button-primary button-block filter-show-results"
+                >
+                  Apply filters <Icon name="arrow" size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="mobile-filter-clear"
+                  onClick={() => {
+                    clearFilters();
+                    setFilterOpen(false);
+                  }}
+                >
+                  Clear all filters
+                </button>
               </div>
-
-              <div className="form-field">
-                <span>Qualification level</span>
-                <CustomSelect
-                  value={draftLevel}
-                  onChange={setDraftLevel}
-                  options={dynamicFilterOptions.levels}
-                  placeholder="Any level"
-                  aria-label="Qualification level"
-                />
-              </div>
-
-              <div className="form-field">
-                <span>Study mode</span>
-                <CustomSelect
-                  value={draftMode}
-                  onChange={setDraftMode}
-                  options={dynamicFilterOptions.modes}
-                  placeholder="Any study mode"
-                  aria-label="Study mode"
-                />
-              </div>
-
-              <div className="form-field">
-                <span>Campus (illustrative)</span>
-                <CustomSelect
-                  value={draftCampus}
-                  onChange={setDraftCampus}
-                  options={dynamicFilterOptions.campuses}
-                  placeholder="All campuses (illustrative)"
-                  aria-label="Campus location (illustrative)"
-                />
-              </div>
-
-              <div className="form-field">
-                <span>Funding support</span>
-                <CustomSelect
-                  value={draftFunding}
-                  onChange={setDraftFunding}
-                  options={dynamicFilterOptions.fundings}
-                  placeholder="All funding types"
-                  aria-label="Funding support"
-                />
-              </div>
-            </div>
-
-            <div className="mobile-filter-footer">
-              <button
-                type="button"
-                className="button button-outline"
-                onClick={clearAllFilters}
-                aria-label="Reset all filters"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={applyFilters}
-                aria-label="Apply selected filters"
-              >
-                Apply filters
-              </button>
-            </div>
-          </div>
+            </form>
+          </aside>
         </div>
       )}
     </div>

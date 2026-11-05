@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { CourseSearch } from "@/components/course-search";
 
 export const metadata: Metadata = {
-  title: "Course Directory & Search | Chelmsford College",
+  title: "Course Directory & Search",
   description:
     "Explore all 33 Chelmsford College courses across vocational diplomas, T Levels, and apprenticeships. Filter by subject, level, study mode, illustrative campus, and funding.",
 };
